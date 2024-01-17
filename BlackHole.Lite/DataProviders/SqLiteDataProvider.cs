@@ -1,0 +1,437 @@
+﻿using BlackHole.CoreSupport;
+using BlackHole.Logger;
+using Microsoft.Data.Sqlite;
+using System.Reflection;
+
+namespace BlackHole.DataProviders
+{
+    internal class SqliteDataProvider
+    {
+        #region Constructor
+        private readonly string _connectionString;
+        internal readonly string insertedOutput = "returning Id";
+        internal readonly bool skipQuotes = true;
+
+        internal SqliteDataProvider(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+        #endregion
+
+        #region Internal Processes
+        private int ExecuteEntryScalar<T>(string commandText, T entry, string connectionString)
+        {
+            try
+            {
+                int Id = default;
+                using (SqliteConnection connection = new(connectionString))
+                {
+                    connection.Open();
+                    SqliteCommand Command = new(commandText, connection);
+                    ObjectToParameters(entry, Command.Parameters);
+                    object? Result = Command.ExecuteScalar();
+                    connection.Close();
+
+                    if (Result != null)
+                    {
+                        Id = (int)Convert.ChangeType(Result, typeof(int));
+                    }
+                }
+                return Id;
+            }
+            catch (Exception ex)
+            {
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return default;
+            }
+        }
+
+        private int ExecuteEntryScalar<T>(string commandText, T entry, BlackHoleTransaction bhTransaction)
+        {
+            try
+            {
+                SqliteConnection? connection = bhTransaction.connection;
+                SqliteTransaction? transaction = bhTransaction._transaction;
+                SqliteCommand Command = new(commandText, connection, transaction);
+                ObjectToParameters(entry, Command.Parameters);
+                object? Result = Command.ExecuteScalar();
+
+                if (Result != null)
+                {
+                    return (int)Convert.ChangeType(Result, typeof(int));
+                }
+            }
+            catch (Exception ex)
+            {
+                bhTransaction.hasError = true;
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+            }
+            return default;
+        }
+        #endregion
+
+        #region Execution Methods
+        public int InsertScalar<T>(string commandStart, string commandEnd, T entry, string connectionString)
+        {
+            connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
+            return ExecuteEntryScalar($"{commandStart}){commandEnd}) {insertedOutput};", entry, connectionString);
+        }
+
+        public int InsertScalar<T>(string commandStart, string commandEnd, T entry, BlackHoleTransaction bhTransaction)
+        {
+            return ExecuteEntryScalar($"{commandStart}) {commandEnd}) {insertedOutput};", entry, bhTransaction);
+        }
+
+        public List<int> MultiInsertScalar<T>(string commandStart, string commandEnd, List<T> entries, BlackHoleTransaction bhTransaction)
+        {
+            List<int> Ids = new();
+            string commandText = $"{commandStart}) {commandEnd}) {insertedOutput};";
+
+            foreach (T entry in entries)
+            {
+                Ids.Add(ExecuteEntryScalar(commandText, entry, bhTransaction));
+            }
+
+            return Ids;
+        }
+
+        public bool ExecuteEntry<T>(string commandText, T entry, string connectionString)
+        {
+            try
+            {
+                connectionString =  string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
+
+                using (SqliteConnection connection = new(connectionString))
+                {
+                    connection.Open();
+                    SqliteCommand Command = new(commandText, connection);
+                    ObjectToParameters(entry, Command.Parameters);
+                    Command.ExecuteNonQuery();
+                    connection.Close();
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return false;
+            }
+        }
+
+        public bool ExecuteEntry<T>(string commandText, T entry, BlackHoleTransaction bhTransaction)
+        {
+            try
+            {
+                SqliteConnection? connection = bhTransaction.connection;
+                SqliteTransaction? transaction = bhTransaction._transaction;
+                SqliteCommand Command = new(commandText, connection, transaction);
+                ObjectToParameters(entry, Command.Parameters);
+                Command.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                bhTransaction.hasError = true;
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return false;
+            }
+        }
+
+        public bool JustExecute(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bhTransaction)
+        {
+            try
+            {
+                SqliteConnection connection = bhTransaction.connection;
+                SqliteTransaction transaction = bhTransaction._transaction;
+                SqliteCommand Command = new(commandText, connection, transaction);
+                ArrayToParameters(parameters, Command.Parameters);
+                Command.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                bhTransaction.hasError = true;
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString()));
+                return false;
+            }
+        }
+
+        public bool JustExecute(string commandText, List<BlackHoleParameter>? parameters, string connectionString)
+        {
+            try
+            {
+                connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
+
+                using (SqliteConnection connection = new(connectionString))
+                {
+                    connection.Open();
+                    SqliteCommand Command = new(commandText, connection);
+                    ArrayToParameters(parameters, Command.Parameters);
+                    Command.ExecuteNonQuery();
+                    connection.Close();
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString()));
+                return false;
+            }
+        }
+
+
+        public T? QueryFirst<T>(string commandText, List<BlackHoleParameter>? parameters, string connectionString)
+        {
+            try
+            {
+                T? result = default;
+                connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
+
+                using (SqliteConnection connection = new(connectionString))
+                {
+                    connection.Open();
+                    SqliteCommand Command = new(commandText, connection);
+                    ArrayToParameters(parameters, Command.Parameters);
+
+                    using (SqliteDataReader DataReader = Command.ExecuteReader())
+                    {
+                        while (DataReader.Read())
+                        {
+                            T? line = MapObject<T>(DataReader);
+
+                            if (line != null)
+                            {
+                                result = line;
+                                break;
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return default;
+            }
+        }
+
+        public List<T> Query<T>(string commandText, List<BlackHoleParameter>? parameters, string connectionString)
+        {
+            try
+            {
+                List<T> result = new();
+                connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
+                using (SqliteConnection connection = new(_connectionString))
+                {
+                    connection.Open();
+                    SqliteCommand Command = new(commandText, connection);
+                    ArrayToParameters(parameters, Command.Parameters);
+
+                    using (SqliteDataReader DataReader = Command.ExecuteReader())
+                    {
+                        while (DataReader.Read())
+                        {
+                            T? line = MapObject<T>(DataReader);
+
+                            if (line != null)
+                            {
+                                result.Add(line);
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return new List<T>();
+            }
+        }
+
+        public T? QueryFirst<T>(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bHTransaction)
+        {
+            try
+            {
+                T? result = default;
+                SqliteConnection connection = bHTransaction.connection;
+                SqliteTransaction transaction = bHTransaction._transaction;
+                SqliteCommand Command = new(commandText, connection, transaction);
+                ArrayToParameters(parameters, Command.Parameters);
+
+                using (SqliteDataReader DataReader = Command.ExecuteReader())
+                {
+                    while (DataReader.Read())
+                    {
+                        T? line = MapObject<T>(DataReader);
+
+                        if (line != null)
+                        {
+                            result = line;
+                            break;
+                        }
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                bHTransaction.hasError = true;
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return default;
+            }
+        }
+
+        public List<T> Query<T>(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bHTransaction)
+        {
+            try
+            {
+                List<T> result = new();
+                SqliteConnection connection = bHTransaction.connection;
+                SqliteTransaction transaction = bHTransaction._transaction;
+                SqliteCommand Command = new(commandText, connection, transaction);
+                ArrayToParameters(parameters, Command.Parameters);
+
+                using (SqliteDataReader DataReader = Command.ExecuteReader())
+                {
+                    while (DataReader.Read())
+                    {
+                        T? line = MapObject<T>(DataReader);
+
+                        if (line != null)
+                        {
+                            result.Add(line);
+                        }
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                bHTransaction.hasError = true;
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString()));
+                return new List<T>();
+            }
+        }
+        #endregion
+
+        #region Object Mapping
+        private T? MapObject<T>(SqliteDataReader reader)
+        {
+            try
+            {
+                Type type = typeof(T);
+
+                if (type == typeof(string))
+                {
+                    if (reader.FieldCount > 0) return (T)reader.GetValue(0);
+                    else return default;
+                }
+
+                PropertyInfo[] properties = type.GetProperties();
+
+                if (properties.Length == 0 && reader.FieldCount > 0)
+                {
+                    if (typeof(T) == typeof(Guid))
+                    {
+                        object GValue = reader.GetGuid(0);
+                        return (T)GValue;
+                    }
+
+                    object value = reader.GetValue(0);
+
+                    if (value != null)
+                    {
+                        return (T)Convert.ChangeType(value, typeof(T));
+                    }
+
+                    return default;
+                }
+
+                object? obj = Activator.CreateInstance(type);
+
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    if (!reader.IsDBNull(i))
+                    {
+                        PropertyInfo? property = properties.FirstOrDefault(x => string.Equals(x.Name, reader.GetName(i), StringComparison.OrdinalIgnoreCase));
+                        if (property != null)
+                        {
+                            if (property.PropertyType == typeof(Guid))
+                            {
+                                type.GetProperty(property.Name)?.SetValue(obj, reader.GetGuid(i));
+                            }
+                            else
+                            {
+                                type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(reader.GetValue(i), property.PropertyType));
+                            }
+                        }
+                    }
+                }
+                return (T?)obj;
+            }
+            catch (Exception ex)
+            {
+                Task.Factory.StartNew(() => ex.Message.CreateErrorLogs($"Object_Mapping_{typeof(T).Name}", "MapperError", ex.ToString()));
+                return default;
+            }
+        }
+
+        private void ArrayToParameters(List<BlackHoleParameter>? bhParameters, SqliteParameterCollection parameters)
+        {
+            if (bhParameters != null)
+            {
+                foreach (BlackHoleParameter param in bhParameters)
+                {
+                    object? value = param.Value;
+
+                    if (value != null)
+                    {
+                        if (value.GetType() == typeof(Guid))
+                        {
+                            parameters.Add(new SqliteParameter(@param.Name, value.ToString()));
+                        }
+                        else
+                        {
+                            parameters.Add(new SqliteParameter(@param.Name, value));
+                        }
+                    }
+                    else
+                    {
+                        parameters.Add(new SqliteParameter(@param.Name, DBNull.Value));
+                    }
+                }
+            }
+        }
+
+        private void ObjectToParameters<T>(T item, SqliteParameterCollection parameters)
+        {
+            PropertyInfo[] propertyInfos = typeof(T).GetProperties();
+
+            foreach (PropertyInfo property in propertyInfos)
+            {
+                object? value = property.GetValue(item);
+
+                if (value != null)
+                {
+                    if (value?.GetType() == typeof(Guid))
+                    {
+                        parameters.Add(new SqliteParameter(@property.Name, value.ToString()));
+                    }
+                    else
+                    {
+                        parameters.Add(new SqliteParameter(@property.Name, value));
+                    }
+                }
+                else
+                {
+                    parameters.Add(new SqliteParameter(@property.Name, DBNull.Value));
+                }
+            }
+        }
+        #endregion
+    }
+}
