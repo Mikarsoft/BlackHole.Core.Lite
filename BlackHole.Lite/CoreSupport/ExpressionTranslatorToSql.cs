@@ -31,6 +31,42 @@ namespace BlackHole.CoreSupport
                     memberValue = null
                 });
             }
+            else if(expression is UnaryExpression unExpr)
+            {
+                if (unExpr.Operand is MemberExpression mExpr)
+                {
+                    MemberExpression Exp = mExpr;
+                    ExpressionType ExpType = ExpressionType.NotEqual;
+
+                    expressionTree.Add(new ExpressionsData()
+                    {
+                        operation = null,
+                        leftMethodMember = null,
+                        expressionType = ExpType,
+                        rightChecked = false,
+                        leftChecked = false,
+                        memberValue = true,
+                        parentIndex = currentIndx,
+                        leftMember = Exp,
+                    });
+                }
+            }
+            else if(expression is MemberExpression memberExpr)
+            {
+                ExpressionType ExpType = ExpressionType.Equal;
+
+                expressionTree.Add(new ExpressionsData()
+                {
+                    operation = null,
+                    leftMethodMember = null,
+                    expressionType = ExpType,
+                    rightChecked = false,
+                    leftChecked = false,
+                    memberValue = true,
+                    parentIndex = currentIndx,
+                    leftMember = memberExpr
+                });
+            }
 
             while (startTranslate)
             {
@@ -46,36 +82,124 @@ namespace BlackHole.CoreSupport
                         MethodCallExpression? leftCallOperation = expressionTree[currentIndx].operation?.Left as MethodCallExpression;
                         MethodCallExpression? rightCallOperation = expressionTree[currentIndx].operation?.Right as MethodCallExpression;
 
-                        if (!expressionTree[currentIndx].leftChecked && (leftOperation != null || leftCallOperation != null))
+                        if (!expressionTree[currentIndx].leftChecked)
                         {
-                            expressionTree.Add(new ExpressionsData()
+                            if(leftOperation != null || leftCallOperation != null)
                             {
-                                operation = leftOperation,
-                                leftMethodMember = leftCallOperation,
-                                expressionType = leftOperation != null ? leftOperation.NodeType : ExpressionType.Default,
-                                rightChecked = false,
-                                leftChecked = false,
-                                memberValue = null,
-                                parentIndex = currentIndx
-                            });
-                            expressionTree[currentIndx].leftChecked = true;
-                            addTotree = true;
+                                expressionTree.Add(new ExpressionsData()
+                                {
+                                    operation = leftOperation,
+                                    leftMethodMember = leftCallOperation,
+                                    expressionType = leftOperation != null ? leftOperation.NodeType : ExpressionType.Default,
+                                    rightChecked = false,
+                                    leftChecked = false,
+                                    memberValue = null,
+                                    parentIndex = currentIndx
+                                });
+                                expressionTree[currentIndx].leftChecked = true;
+                                addTotree = true;
+                            }
+                            else if(expressionTree[currentIndx].operation?.Left is UnaryExpression uExp)
+                            {
+                                if (uExp.Operand is MemberExpression mExp)
+                                {
+                                    MemberExpression leftExp = mExp;
+                                    ExpressionType leftExpType = ExpressionType.Equal;
+
+                                    expressionTree.Add(new ExpressionsData()
+                                    {
+                                        operation = leftOperation,
+                                        leftMethodMember = leftCallOperation,
+                                        expressionType = leftExpType,
+                                        rightChecked = false,
+                                        leftChecked = false,
+                                        memberValue = true,
+                                        parentIndex = currentIndx,
+                                        leftMember = leftExp,
+                                    });
+                                    expressionTree[currentIndx].leftChecked = true;
+                                    addTotree = true;
+                                }
+                            }
+                            else if (expressionTree[currentIndx].leftMember != null)
+                            {
+                                MemberExpression? leftExp = expressionTree[currentIndx].leftMember;
+                                ExpressionType leftExpType = ExpressionType.Equal;
+
+                                expressionTree.Add(new ExpressionsData()
+                                {
+                                    operation = leftOperation,
+                                    leftMethodMember = leftCallOperation,
+                                    expressionType = leftExpType,
+                                    rightChecked = false,
+                                    leftChecked = false,
+                                    memberValue = true,
+                                    parentIndex = currentIndx,
+                                    leftMember = leftExp,
+                                });
+                                expressionTree[currentIndx].leftChecked = true;
+                                addTotree = true;
+                            }
                         }
 
-                        if (!expressionTree[currentIndx].rightChecked && (rightOperation != null || rightCallOperation != null))
+                        if (!expressionTree[currentIndx].rightChecked)
                         {
-                            expressionTree.Add(new ExpressionsData()
+                            if(rightOperation != null || rightCallOperation != null)
                             {
-                                operation = rightOperation,
-                                rightMethodMember = rightCallOperation,
-                                expressionType = rightOperation != null ? rightOperation.NodeType : ExpressionType.Default,
-                                rightChecked = false,
-                                leftChecked = false,
-                                memberValue = null,
-                                parentIndex = currentIndx
-                            });
-                            expressionTree[currentIndx].rightChecked = true;
-                            addTotree = true;
+                                expressionTree.Add(new ExpressionsData()
+                                {
+                                    operation = rightOperation,
+                                    rightMethodMember = rightCallOperation,
+                                    expressionType = rightOperation != null ? rightOperation.NodeType : ExpressionType.Default,
+                                    rightChecked = false,
+                                    leftChecked = false,
+                                    memberValue = null,
+                                    parentIndex = currentIndx
+                                });
+                                expressionTree[currentIndx].rightChecked = true;
+                                addTotree = true;
+                            }
+                            else if (expressionTree[currentIndx].operation?.Right is UnaryExpression uExp)
+                            {
+                                if (uExp.Operand is MemberExpression mExp)
+                                {
+                                    MemberExpression rightExp = mExp;
+                                    ExpressionType rightExpType = ExpressionType.NotEqual;
+
+                                    expressionTree.Add(new ExpressionsData()
+                                    {
+                                        operation = rightOperation,
+                                        leftMethodMember = rightCallOperation,
+                                        expressionType = rightExpType,
+                                        rightChecked = false,
+                                        leftChecked = false,
+                                        memberValue = true,
+                                        parentIndex = currentIndx,
+                                        leftMember = rightExp
+                                    });
+                                    expressionTree[currentIndx].rightChecked = true;
+                                    addTotree = true;
+                                }
+                            }
+                            else if (expressionTree[currentIndx].rightMember != null)
+                            {
+                                MemberExpression? rightExp = expressionTree[currentIndx].rightMember;
+                                ExpressionType rightExpType = ExpressionType.Equal;
+
+                                expressionTree.Add(new ExpressionsData()
+                                {
+                                    operation = rightOperation,
+                                    leftMethodMember = rightCallOperation,
+                                    expressionType = rightExpType,
+                                    rightChecked = false,
+                                    leftChecked = false,
+                                    memberValue = true,
+                                    parentIndex = currentIndx,
+                                    leftMember = rightExp
+                                });
+                                expressionTree[currentIndx].rightChecked = true;
+                                addTotree = true;
+                            }
                         }
 
                         if (addTotree)
@@ -95,11 +219,13 @@ namespace BlackHole.CoreSupport
                             if (expressionTree[currentIndx].operation?.Right is ConstantExpression rightConstant)
                             {
                                 expressionTree[currentIndx].memberValue = rightConstant?.Value;
+                                expressionTree[currentIndx].IsNullValue = rightConstant?.Value == null;
                             }
 
                             if (expressionTree[currentIndx].operation?.Right is BinaryExpression rightBinary)
                             {
                                 expressionTree[currentIndx].memberValue = Expression.Lambda(rightBinary).Compile().DynamicInvoke();
+                                expressionTree[currentIndx].IsNullValue = expressionTree[currentIndx].memberValue == null;
                             }
 
                             if (expressionTree[currentIndx].operation?.Right is MethodCallExpression rightmethodMember)
@@ -120,11 +246,13 @@ namespace BlackHole.CoreSupport
                             if (expressionTree[currentIndx].operation?.Left is ConstantExpression leftConstant)
                             {
                                 expressionTree[currentIndx].memberValue = leftConstant?.Value;
+                                expressionTree[currentIndx].IsNullValue = leftConstant?.Value == null;
                             }
 
                             if (expressionTree[currentIndx].operation?.Left is BinaryExpression leftBinary)
                             {
                                 expressionTree[currentIndx].memberValue = Expression.Lambda(leftBinary).Compile().DynamicInvoke();
+                                expressionTree[currentIndx].IsNullValue = expressionTree[currentIndx].memberValue == null;
                             }
 
                             if (expressionTree[currentIndx].operation?.Left is MethodCallExpression leftmethodMember)
@@ -362,6 +490,7 @@ namespace BlackHole.CoreSupport
                 try
                 {
                     thisBranch.memberValue = Expression.Lambda(memberExp).Compile().DynamicInvoke();
+                    thisBranch.IsNullValue = thisBranch.memberValue == null;
                 }
                 catch
                 {
@@ -378,6 +507,7 @@ namespace BlackHole.CoreSupport
             else
             {
                 thisBranch.memberValue = Expression.Lambda(memberExp).Compile().DynamicInvoke();
+                thisBranch.IsNullValue = thisBranch.memberValue == null;
             }
         }
 
@@ -388,7 +518,7 @@ namespace BlackHole.CoreSupport
                 parameters = new List<BlackHoleParameter>();
             }
 
-            List<ExpressionsData> children = data.Where(x => x.memberValue != null || x.methodData.Count > 0).ToList();
+            List<ExpressionsData> children = data.Where(x => x.memberValue != null || x.methodData.Count > 0  || (x.memberValue == null && x.IsNullValue)).ToList();
             string[] translations = new string[children.Count];
 
             foreach (ExpressionsData child in children)
@@ -448,20 +578,27 @@ namespace BlackHole.CoreSupport
 
                         index++;
 
-                        ColumnAndParameter childCols = child.TranslateExpression(index, letter);
-
-                        if (childCols.ParamName != string.Empty)
+                        if(children.Count > 1)
                         {
-                            parameters.Add(new BlackHoleParameter { Name = childCols.ParamName, Value = childCols.Value });
-                        }
+                            ColumnAndParameter childCols = child.TranslateExpression(index, letter);
 
-                        parent.sqlCommand = $"({parent.sqlCommand} {parentCols.Column} {childCols.Column})";
-                        index++;
+                            if (childCols.ParamName != string.Empty)
+                            {
+                                parameters.Add(new BlackHoleParameter { Name = childCols.ParamName, Value = childCols.Value });
+                            }
+
+                            parent.sqlCommand = $"({parent.sqlCommand} {parentCols.Column} {childCols.Column})";
+                            index++;
+                        }
+                        else
+                        {
+                            parent.sqlCommand = $"({parentCols.Column})";
+                        }
                     }
                 }
             }
 
-            List<ExpressionsData> parents = data.Where(x => x.memberValue == null && x.methodData.Count == 0 && x.expressionType != ExpressionType.Default).ToList();
+            List<ExpressionsData> parents = data.Where(x => x.memberValue == null && !x.IsNullValue && x.methodData.Count == 0 && x.expressionType != ExpressionType.Default).ToList();
 
             if (parents.Count > 1)
             {
@@ -800,6 +937,7 @@ namespace BlackHole.CoreSupport
         {
             return new JoinsData
             {
+                DatabaseName = data.DatabaseName,
                 BaseTable = data.BaseTable,
                 TablesToLetters = data.TablesToLetters,
                 AllProps = data.AllProps,
@@ -817,6 +955,7 @@ namespace BlackHole.CoreSupport
         {
             return new PreJoinsData<T, TOther>
             {
+                DatabaseName = data.DatabaseName,
                 BaseTable = data.BaseTable,
                 TablesToLetters = data.TablesToLetters,
                 AllProps = data.AllProps,

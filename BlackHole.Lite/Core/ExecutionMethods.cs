@@ -1,7 +1,6 @@
 ﻿using BlackHole.CoreSupport;
 using BlackHole.DataProviders;
 using BlackHole.Entities;
-using System;
 using System.Linq.Expressions;
 
 namespace BlackHole.Core
@@ -13,6 +12,71 @@ namespace BlackHole.Core
     public static class ExecutionMethods
     {
         internal static SqliteDataProvider _dataProvider = BHDataProviderSelector.GetDataProvider();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static bool Any<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        {
+            string limit = 1.GetLimiter();
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 {limit}", null, context.ConnectionString) != null;
+            }
+            return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} {limit}", null, context.ConnectionString) != null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T,bool>> predicate) where T : BlackHoleEntity
+        {
+            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            string limit = 1.GetLimiter();
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, context.ConnectionString) != null;
+            }
+            return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, context.ConnectionString) != null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static int Count<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        {
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<int>($"select count(Id) from {context.ThisTable} where Inactive = 0", null, context.ConnectionString);
+            }
+            return _dataProvider.QueryFirst<int>($"select count(Id) from {context.ThisTable}", null, context.ConnectionString);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static int Count<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
+        {
+            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<int>($"select count(Id) from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
+            }
+            return _dataProvider.QueryFirst<int>($"select count(Id) from {context.ThisTable} where {sql.Columns}", sql.Parameters, context.ConnectionString);
+        }
 
         /// <summary>
         /// Gets all the entries of the specific Table
@@ -132,11 +196,12 @@ namespace BlackHole.Core
         public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
             ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
+                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, context.ConnectionString);
             }
-            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns}", sql.Parameters, context.ConnectionString);
+            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, context.ConnectionString);
         }
 
         /// <summary>
@@ -151,11 +216,12 @@ namespace BlackHole.Core
         public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
             ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, bhTransaction.transaction);
+                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, bhTransaction.transaction);
             }
-            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns}", sql.Parameters, bhTransaction.transaction);
+            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, bhTransaction.transaction);
         }
 
         /// <summary>
@@ -233,7 +299,7 @@ namespace BlackHole.Core
         public static List<int> InsertEntries<T>(this BHEntityContext<T> context, List<T> entries) where T : BlackHoleEntity
         {
             List<int> Ids = new();
-            using (BlackHoleTransaction bhTransaction = new())
+            using (BlackHoleTransaction bhTransaction = new(context.ConnectionString))
             {
                 Ids = _dataProvider.MultiInsertScalar($"insert into {context.ThisTable} ({context.PropertyNames},Inactive", $"values ({context.PropertyParams}, 0", entries, bhTransaction);
             }
@@ -297,7 +363,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool UpdateEntriesById<T>(this BHEntityContext<T> context, List<T> entries) where T : BlackHoleEntity
         {
-            return UpdateMany(entries, $"update {context.ThisTable} set {context.UpdateParams} where Id = @Id");
+            return UpdateMany(entries, $"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", context.ConnectionString);
         }
 
         /// <summary>
@@ -793,24 +859,7 @@ namespace BlackHole.Core
             data.WherePredicates = data.TablesToLetters.RejectInactiveEntities(data.WherePredicates);
             TableLetters tL = data.TablesToLetters.First(x => x.Table == data.BaseTable);
             string commandText = $"{OccupiedProperties.BuildCommand()} from {tL.Table?.Name} {tL.Letter} {data.Joins} {data.WherePredicates}";
-            return _dataProvider.Query<Dto>(commandText, data.DynamicParams, string.Empty);
-        }
-
-        /// <summary>
-        /// Executes the whole joins sequence and returns the result mapped 
-        /// on a List of the specified Dto. Only the properties of the Entities 
-        /// that match with the properties of the Dto will be mapped
-        /// </summary>
-        /// <typeparam name="Dto">BlackHoleDto</typeparam>
-        /// <param name="data">All data of the previous Joins sequence</param>
-        /// <returns>List of the Specified Dto</returns>
-        public static List<Dto> ExecuteQuery<Dto>(this JoinsData data, string connectionString) where Dto : BlackHoleDto
-        {
-            List<PropertyOccupation> OccupiedProperties = data.AllProps.MapPropertiesToDto<Dto>();
-            data.WherePredicates = data.TablesToLetters.RejectInactiveEntities(data.WherePredicates);
-            TableLetters tL = data.TablesToLetters.First(x => x.Table == data.BaseTable);
-            string commandText = $"{OccupiedProperties.BuildCommand()} from {tL.Table?.Name} {tL.Letter} {data.Joins} {data.WherePredicates}";
-            return _dataProvider.Query<Dto>(commandText, data.DynamicParams, connectionString.BuildConnectionString());
+            return _dataProvider.Query<Dto>(commandText, data.DynamicParams, data.DatabaseName.BuildConnectionString());
         }
 
         /// <summary>
@@ -833,7 +882,7 @@ namespace BlackHole.Core
 
         internal static List<Dto> ExecuteView<Dto>(this StoredView storedV)
         {
-            return _dataProvider.Query<Dto>(storedV.CommandText, storedV.DynamicParams, string.Empty);
+            return _dataProvider.Query<Dto>(storedV.CommandText, storedV.DynamicParams, storedV.DatabaseName.BuildConnectionString());
         }
 
         internal static List<Dto> ExecuteView<Dto>(this StoredView storedV, BHTransaction bhTransaction)
@@ -855,7 +904,7 @@ namespace BlackHole.Core
             data.WherePredicates = data.TablesToLetters.RejectInactiveEntities(data.WherePredicates);
             TableLetters tL = data.TablesToLetters.First(x => x.Table == data.BaseTable);
             string commandText = $"{OccupiedProperties.BuildCommand()} from {tL.Table?.Name} {tL.Letter} {data.Joins} {data.WherePredicates}";
-            BHDataProvider.AddStoredView<Dto>(new StoredView { DtoType = typeof(Dto), CommandText = commandText, DynamicParams = data.DynamicParams });
+            BHDataProvider.AddStoredView<Dto>(new StoredView { DtoType = typeof(Dto), CommandText = commandText, DynamicParams = data.DynamicParams }, data.DatabaseName);
         }
 
         private static string RejectInactiveEntities(this List<TableLetters> involvedTables, string whereCommand)
@@ -894,9 +943,9 @@ namespace BlackHole.Core
             return sqlCommand.Substring(0, sqlCommand.Length - 1);
         }
 
-        private static bool UpdateMany<T>(List<T> entries, string updateCommand)
+        private static bool UpdateMany<T>(List<T> entries, string updateCommand, string connectionString)
         {
-            BlackHoleTransaction bhTransaction = new();
+            BlackHoleTransaction bhTransaction = new(connectionString);
 
             foreach (T entry in entries)
             {
@@ -907,6 +956,11 @@ namespace BlackHole.Core
             bhTransaction.Dispose();
 
             return result;
+        }
+
+        internal static string GetLimiter(this int rowsCount)
+        {
+            return $" limit {rowsCount} ";
         }
 
         private static bool UpdateMany<T>(List<T> entries, string updateCommand, BlackHoleTransaction bhTransaction)

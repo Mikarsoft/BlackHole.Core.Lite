@@ -4,11 +4,16 @@ namespace BlackHole.Internal
 {
     internal class BHDatabaseInfoReader
     {
-        private readonly SqliteExecutionProvider connection;
+        private SqliteExecutionProvider connection { get; set; }
 
         internal BHDatabaseInfoReader(SqliteExecutionProvider _connection)
         {
             connection = _connection;
+        }
+
+        internal void SwitchConnection(string connectionString)
+        {
+            connection.SwitchConnectionString(connectionString);
         }
 
         internal List<TableParsingInfo> GetDatabaseParsingInfo()

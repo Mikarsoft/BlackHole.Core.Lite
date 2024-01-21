@@ -43,7 +43,7 @@ namespace BlackHole.CoreSupport
             {
                 Task.Factory.StartNew(() => MethodData.MethodName.CreateErrorLogs($"SqlFunctionsReader_{MethodData.MethodName}",
                     $"Unknown Method: {MethodData.MethodName}. It was translated into '1 != 1' to avoid data corruption.",
-                    "Please read the documentation to find the supported Sql functions and the correct usage of them."));
+                    "Please read the documentation to find the supported Sql functions and the correct usage of them.", "Sql Functions Reader"));
             }
         }
 

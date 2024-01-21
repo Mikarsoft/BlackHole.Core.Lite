@@ -5,7 +5,7 @@ namespace BlackHole.Internal
 {
     internal class BHInitialDataBuilder
     {
-        internal void InsertDefaultData(List<Type> initialDataClasses)
+        internal void InsertDefaultData(List<Type> initialDataClasses, string databaseName)
         {
             foreach (Type initialData in initialDataClasses)
             {
@@ -14,14 +14,14 @@ namespace BlackHole.Internal
                 if (instance != null && method != null)
                 {
                     object[] Argumnet = new object[1];
-                    BHDataInitializer initializer = new();
+                    BHDataInitializer initializer = new(databaseName);
                     Argumnet[0] = initializer;
                     method.Invoke(instance, Argumnet);
                 }
             }
         }
 
-        internal void StoreDefaultViews(List<Type> initialViewClasses)
+        internal void StoreDefaultViews(List<Type> initialViewClasses, string databaseName)
         {
             foreach (Type initialView in initialViewClasses)
             {
@@ -30,7 +30,7 @@ namespace BlackHole.Internal
                 if (instance != null && method != null)
                 {
                     object[] Argumnet = new object[1];
-                    BHViewInitializer initializer = new();
+                    BHViewInitializer initializer = new(databaseName);
                     Argumnet[0] = initializer;
                     method.Invoke(instance, Argumnet);
                 }

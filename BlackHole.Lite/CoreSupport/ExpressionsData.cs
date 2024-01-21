@@ -17,5 +17,6 @@ namespace BlackHole.CoreSupport
         internal bool leftChecked { get; set; }
         internal int parentIndex { get; set; }
         internal string sqlCommand { get; set; } = "";
+        internal bool IsNullValue { get; set; }
     }
 }

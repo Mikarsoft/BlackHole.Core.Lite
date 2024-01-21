@@ -15,8 +15,13 @@ namespace BlackHole.Internal
             return "Id INTEGER PRIMARY KEY AUTOINCREMENT ,";
         }
 
-        internal string GetServerConnection(string databaseName)
+        internal string GetDatabasePath(string databaseName)
         {
+            if(string.IsNullOrEmpty(databaseName))
+            {
+                return Path.Combine(DatabaseStatics.DataPath, $"{DatabaseStatics.DefaultDatabaseName}.db3");
+            }
+
             return Path.Combine(DatabaseStatics.DataPath,$"{databaseName}.db3");
         }
 

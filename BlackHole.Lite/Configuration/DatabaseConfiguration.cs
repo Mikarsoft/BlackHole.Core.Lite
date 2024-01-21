@@ -1,4 +1,6 @@
 ﻿using BlackHole.Core;
+using BlackHole.CoreSupport;
+using BlackHole.Lite.Configuration;
 using BlackHole.Logger;
 using BlackHole.Statics;
 using SQLitePCL;
@@ -7,11 +9,14 @@ namespace BlackHole.Configuration
 {
     internal static class DatabaseConfiguration
     {
-        internal static void LogsSettings(string LogsPath)
+        internal static void SetDataPathAndLogging(this string dataPath)
         {
-            DatabaseStatics.DataPath = LogsPath;
-            LoggerService.DeleteOldLogs();
-            LoggerService.SetUpLogger();
+            if (string.IsNullOrEmpty(DatabaseStatics.DataPath))
+            {
+                DatabaseStatics.DataPath = Path.Combine(dataPath,"BlackHoleData");
+                LoggerService.DeleteOldLogs();
+                LoggerService.SetUpLogger();
+            }
         }
 
         internal static bool IsAutoUpdateOn()
@@ -21,39 +26,33 @@ namespace BlackHole.Configuration
                 DatabaseStatics.AutoUpdate = false;
                 return true;
             }
+
             return false;
         }
 
-        internal static void ScanConnectionString(string connectionString)
+        internal static void CreateConnectionStrings(this List<DatabaseSettings> databases)
         {
-            ScanLiteString(connectionString, 0);
-        }
+            if (databases.Any())
+            {
+                if (string.IsNullOrEmpty(DatabaseStatics.DefaultConnectionString))
+                {
+                    DatabaseStatics.DefaultConnectionString = databases[0].DatabaseName.BuildConnectionString();
+                    DatabaseStatics.DefaultDatabaseName = databases[0].DatabaseName;
+                    BHDataProvider.DefaultDbName = databases[0].DatabaseName;
+                }
 
-        internal static void ScanConnectionStrings(List<string> databases , string dataPath)
-        {
-            DatabaseStatics.ConnectionStrings = new string[databases.Count];
-            for(int i = 0; i < databases.Count; i++)
-            {
-                ScanLiteString(Path.Combine(dataPath, $"{databases[i]}.db3"), i);
-            }
-        }
+                foreach(DatabaseSettings database in databases)
+                {
+                    database.ConnectionString = database.DatabaseName.BuildConnectionString();
+                }
 
-        private static void ScanLiteString(string connectionString, int index)
-        {
-            try
-            {
-                string[] pathSplit = connectionString.Split('\\');
-                string[] nameOnly = pathSplit[pathSplit.Length - 1].Split('.');
-                DatabaseStatics.DatabaseName = nameOnly[0];
+                if (!DatabaseStatics.IsLiteLibInitialized)
+                {
+                    Batteries_V2.Init();
+                    raw.SetProvider(new SQLite3Provider_e_sqlite3());
+                    DatabaseStatics.IsLiteLibInitialized = true;
+                }
             }
-            catch
-            {
-                DatabaseStatics.DatabaseName = connectionString;
-            }
-            Batteries_V2.Init();
-            raw.SetProvider(new SQLite3Provider_e_sqlite3());
-            DatabaseStatics.ConnectionStrings[index] = $"Data Source={connectionString};";
-            BHDataProvider.SetExecutionProvider();
         }
     }
 }

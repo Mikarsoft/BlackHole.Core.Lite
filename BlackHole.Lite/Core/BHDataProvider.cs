@@ -10,15 +10,25 @@ namespace BlackHole.Core
     {
         internal static List<BHEntityContext> EntitiesContext = new();
         internal static List<StoredView> StoredViews = new();
+        internal static string DefaultDbName {  get; set; } = string.Empty;
 
         /// <summary>
-        /// Run a custom Sql Command using this property
+        /// 
         /// </summary>
-        public static BHConnection Command = new();
-
-        internal static void SetExecutionProvider()
+        /// <returns></returns>
+        public static BHConnection GetConnection()
         {
-            Command = new BHConnection();
+            return new BHConnection();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <returns></returns>
+        public static BHConnection GetConnection(string databaseName)
+        {
+            return new BHConnection(databaseName);
         }
 
         /// <summary>
@@ -28,7 +38,7 @@ namespace BlackHole.Core
         /// <returns>Entity Context</returns>
         public static BHEntityContext<T> For<T>() where T : BlackHoleEntity
         {
-            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(string.Empty);
+            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DefaultDbName);
         }
 
         /// <summary>
@@ -48,7 +58,24 @@ namespace BlackHole.Core
         /// <returns>List of Dto</returns>
         public static List<Dto> ExecuteView<Dto>() where Dto : BlackHoleDto
         {
-            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto));
+            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto) && x.DatabaseName == DefaultDbName);
+
+            if (storedV != null)
+            {
+                return storedV.ExecuteView<Dto>();
+            }
+
+            return new();
+        }
+
+        /// <summary>
+        /// Execute a view that has been stored under the specified BlackHoleDto
+        /// </summary>
+        /// <typeparam name="Dto">BlackHoleDto</typeparam>
+        /// <returns>List of Dto</returns>
+        public static List<Dto> ExecuteView<Dto>(string databaseName) where Dto : BlackHoleDto
+        {
+            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto) && x.DatabaseName == databaseName);
 
             if (storedV != null)
             {
@@ -66,7 +93,7 @@ namespace BlackHole.Core
         /// <returns>List of Dto</returns>
         public static List<Dto> ExecuteView<Dto>(BHTransaction bhTransaction) where Dto : BlackHoleDto
         {
-            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto));
+            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto) && x.DatabaseName == bhTransaction.DBName);
 
             if (storedV != null)
             {
@@ -81,9 +108,9 @@ namespace BlackHole.Core
             return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
         }
 
-        internal static void AddStoredView<Dto>(StoredView addView)
+        internal static void AddStoredView<Dto>(StoredView addView, string databaseName)
         {
-            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto));
+            StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto) && x.DatabaseName == databaseName);
 
             if (storedV != null)
             {
@@ -105,6 +132,7 @@ namespace BlackHole.Core
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DefaultDbName,
                 JoinType = "inner"
             };
         }
@@ -121,6 +149,7 @@ namespace BlackHole.Core
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DefaultDbName,
                 JoinType = "full outer"
             };
         }
@@ -137,6 +166,7 @@ namespace BlackHole.Core
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DefaultDbName,
                 JoinType = "left"
             };
         }
@@ -153,6 +183,76 @@ namespace BlackHole.Core
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DefaultDbName,
+                JoinType = "right"
+            };
+        }
+
+
+        /// <summary>
+        /// Starts an Inner Join Between two Entities which can 
+        /// extend with additional joins.
+        /// </summary>
+        /// <typeparam name="T">BlackHoleEntity</typeparam>
+        /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
+        /// <returns>PrejoinData</returns>
+        public static PreJoinsData<T, TOther> InnerJoin<T, TOther>(string databaseName)
+            where T : BlackHoleEntity where TOther : BlackHoleEntity
+        {
+            return new PreJoinsData<T, TOther>()
+            {
+                DatabaseName = databaseName,
+                JoinType = "inner"
+            };
+        }
+
+        /// <summary>
+        /// Starts a Full Outer Join Between two Entities which can 
+        /// extend with additional joins.
+        /// </summary>
+        /// <typeparam name="T">BlackHoleEntity</typeparam>
+        /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
+        /// <returns>PrejoinData</returns>
+        public static PreJoinsData<T, TOther> OuterJoin<T, TOther>(string databaseName)
+            where T : BlackHoleEntity where TOther : BlackHoleEntity
+        {
+            return new PreJoinsData<T, TOther>()
+            {
+                DatabaseName = databaseName,
+                JoinType = "full outer"
+            };
+        }
+
+        /// <summary>
+        /// Starts a Left Join Between two Entities which can 
+        /// extend with additional joins.
+        /// </summary>
+        /// <typeparam name="T">BlackHoleEntity</typeparam>
+        /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
+        /// <returns>PrejoinData</returns>
+        public static PreJoinsData<T, TOther> LeftJoin<T, TOther>(string databaseName)
+            where T : BlackHoleEntity where TOther : BlackHoleEntity
+        {
+            return new PreJoinsData<T, TOther>()
+            {
+                DatabaseName = databaseName,
+                JoinType = "left"
+            };
+        }
+
+        /// <summary>
+        /// Starts a Right Join Between two Entities which can 
+        /// extend with additional joins.
+        /// </summary>
+        /// <typeparam name="T">BlackHoleEntity</typeparam>
+        /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
+        /// <returns>PrejoinData</returns>
+        public static PreJoinsData<T, TOther> RightJoin<T, TOther>(string databaseName)
+            where T : BlackHoleEntity where TOther : BlackHoleEntity
+        {
+            return new PreJoinsData<T, TOther>()
+            {
+                DatabaseName = databaseName,
                 JoinType = "right"
             };
         }

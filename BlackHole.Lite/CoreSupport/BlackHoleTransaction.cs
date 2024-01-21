@@ -19,9 +19,9 @@ namespace BlackHole.CoreSupport
         internal bool hasError = false;
         private bool pendingRollback = false;
 
-        internal BlackHoleTransaction()
+        internal BlackHoleTransaction(string connectionString)
         {
-            connection = BHDataProviderSelector.GetConnection();
+            connection = BHDataProviderSelector.GetConnection(connectionString);
             connection.Open();
             _transaction = connection.BeginTransaction();
         }

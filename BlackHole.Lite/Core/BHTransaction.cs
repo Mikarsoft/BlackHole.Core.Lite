@@ -11,6 +11,7 @@ namespace BlackHole.Core
     public class BHTransaction : IDisposable
     {
         internal BlackHoleTransaction transaction;
+        internal string DBName { get; set; } 
 
         /// <summary>
         /// A Transaction Object that automatically creates a connection and a transaction
@@ -20,7 +21,14 @@ namespace BlackHole.Core
         /// </summary>
         public BHTransaction()
         {
-            transaction = new BlackHoleTransaction();
+            DBName = BHDataProviderSelector.GetDefaultDbName();
+            transaction = new BlackHoleTransaction(DBName.BuildConnectionString());
+        }
+
+        public BHTransaction(string databaseName)
+        {
+            DBName = databaseName;
+            transaction = new BlackHoleTransaction(DBName.BuildConnectionString());
         }
 
         /// <summary>

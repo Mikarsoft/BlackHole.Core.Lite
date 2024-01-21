@@ -1,4 +1,6 @@
 ﻿using BlackHole.Entities;
+using BlackHole.CoreSupport;
+using BlackHole.Statics;
 
 namespace BlackHole.Core
 {
@@ -8,18 +10,25 @@ namespace BlackHole.Core
     public class BHDataInitializer
     {
         internal List<BHEntityContext> EntitiesContext { get; }
-        /// <summary>
-        /// Run a custom Sql Command using this property
-        /// </summary>
-        public BHConnection Command { get; }
-
+        
+        internal string ConnectionString { get; }
+        internal string DatabaseName { get; }
         /// <summary>
         /// A simple data provider that executes the commands only once, when a database is created.
         /// </summary>
-        public BHDataInitializer()
+        internal BHDataInitializer(string databaseName)
         {
+            if (string.IsNullOrEmpty(databaseName))
+            {
+                DatabaseName = DatabaseStatics.DefaultDatabaseName;
+            }
+            else
+            {
+                DatabaseName = databaseName;
+            }
+
             EntitiesContext = BHDataProvider.EntitiesContext;
-            Command = BHDataProvider.Command;
+            ConnectionString = databaseName.BuildConnectionString();
         }
 
         /// <summary>
@@ -29,7 +38,17 @@ namespace BlackHole.Core
         /// <returns>Entity Context</returns>
         public BHEntityContext<T> For<T>() where T : BlackHoleEntity
         {
-            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>();
+            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DatabaseName);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <returns></returns>
+        public BHConnection Command(string databaseName)
+        {
+            return new BHConnection(ConnectionString);
         }
     }
 }

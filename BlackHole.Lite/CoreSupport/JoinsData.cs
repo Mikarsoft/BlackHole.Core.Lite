@@ -8,6 +8,7 @@ namespace BlackHole.CoreSupport
     /// <typeparam name="TOther"></typeparam>
     public class JoinsData<TSource, TOther>
     {
+        internal string DatabaseName { get; set; } = string.Empty;
         internal Type? BaseTable { get; set; }
         internal List<TableLetters> TablesToLetters { get; set; } = new();
         internal List<TableProperties> AllProps { get; set; } = new();
@@ -27,6 +28,8 @@ namespace BlackHole.CoreSupport
     /// <typeparam name="TOther"></typeparam>
     public class PreJoinsData<TSource, TOther>
     {
+        internal string DatabaseName { get; set; } = string.Empty;
+
         internal Type? BaseTable { get; set; }
         internal List<TableLetters> TablesToLetters { get; set; } = new();
         internal List<TableProperties> AllProps { get; set; } = new();
@@ -46,6 +49,8 @@ namespace BlackHole.CoreSupport
     /// </summary>
     public class JoinsData
     {
+        internal string DatabaseName { get; set; } = string.Empty;
+
         internal Type? BaseTable { get; set; }
         internal List<TableLetters> TablesToLetters { get; set; } = new();
         internal List<TableProperties> AllProps { get; set; } = new();

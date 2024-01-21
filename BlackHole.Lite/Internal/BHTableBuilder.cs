@@ -20,27 +20,29 @@ namespace BlackHole.Internal
         private List<string> CustomTransaction { get; set; } = new();
         private List<string> AfterMath { get; set; } = new();
         private EntityContextBuilder entityRegistrator { get; } = new();
+        private string CurrentConnectionString { get; set; } 
 
         internal BHTableBuilder()
         {
-            connection = _multiDatabaseSelector.GetExecutionProvider(DatabaseStatics.ConnectionStrings[0]);
+            CurrentConnectionString = DatabaseStatics.DefaultConnectionString;
+            connection = _multiDatabaseSelector.GetExecutionProvider(CurrentConnectionString);
             dbInfoReader = new BHDatabaseInfoReader(connection);
-            DbConstraints = dbInfoReader.GetDatabaseParsingInfo();
             SqlDatatypes = _multiDatabaseSelector.SqlDatatypesTranslation();
         }
 
-        internal BHTableBuilder(string connectionString)
+        internal void SwitchConnectionString(string connectionString)
         {
-            connection = _multiDatabaseSelector.GetExecutionProvider(connectionString);
-            dbInfoReader = new BHDatabaseInfoReader(connection);
-            DbConstraints = dbInfoReader.GetDatabaseParsingInfo();
-            SqlDatatypes = _multiDatabaseSelector.SqlDatatypesTranslation();
+            CurrentConnectionString = connectionString;
+            connection.SwitchConnectionString(CurrentConnectionString);
+            dbInfoReader.SwitchConnection(CurrentConnectionString);
         }
 
         internal void BuildMultipleTables(List<Type> TableTypes)
         {
             DatabaseStatics.InitializeData = true;
             bool[] Built = new bool[TableTypes.Count];
+
+            DbConstraints = dbInfoReader.GetDatabaseParsingInfo();
 
             for (int i = 0; i < Built.Length; i++)
             {
@@ -663,7 +665,7 @@ namespace BlackHole.Internal
 
             if (AllCommands.Any())
             {
-                BlackHoleTransaction transaction = new();
+                BlackHoleTransaction transaction = new(CurrentConnectionString);
                 connection.JustExecute("PRAGMA foreign_keys = off", null, transaction);
                 foreach (string command in AllCommands)
                 {

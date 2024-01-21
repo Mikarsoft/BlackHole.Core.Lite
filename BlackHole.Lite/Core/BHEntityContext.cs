@@ -1,4 +1,6 @@
-﻿namespace BlackHole.Core
+﻿using BlackHole.CoreSupport;
+
+namespace BlackHole.Core
 {
     internal class BHEntityContext
     {
@@ -37,15 +39,16 @@
         internal string UpdateParams { get; }
         internal string ConnectionString { get; }
 
-        internal BHEntityContext(bool useActivator, string tableName, List<string> tableColumns, string propNames, string propParams, string updateParams, string connectionString)
+        internal BHEntityContext(bool useActivator, string tableName, List<string> tableColumns, string propNames, string propParams, string updateParams, string databaseName)
         {
+
             WithActivator = useActivator;
             ThisTable = tableName;
             Columns = tableColumns;
             PropertyNames = propNames;
             PropertyParams = propParams;
             UpdateParams = updateParams;
-            ConnectionString = connectionString;
+            ConnectionString = databaseName.BuildConnectionString();
         }
     }
 }

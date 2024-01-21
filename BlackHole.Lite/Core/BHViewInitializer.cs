@@ -1,5 +1,6 @@
 ﻿using BlackHole.CoreSupport;
 using BlackHole.Entities;
+using BlackHole.Statics;
 
 namespace BlackHole.Core
 {
@@ -10,6 +11,22 @@ namespace BlackHole.Core
     /// </summary>
     public class BHViewInitializer
     {
+        private readonly string DBName;
+
+        internal BHViewInitializer(string databaseName)
+        {
+            DBName = databaseName;
+
+            if (string.IsNullOrEmpty(databaseName))
+            {
+                DBName = DatabaseStatics.DefaultDatabaseName;
+            }
+            else
+            {
+                DBName = databaseName;
+            }
+        }
+
         /// <summary>
         /// Starts an Inner Join Between two Entities which can 
         /// extend with additional joins.
@@ -22,6 +39,7 @@ namespace BlackHole.Core
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DBName,
                 JoinType = "inner"
             };
         }
@@ -33,11 +51,12 @@ namespace BlackHole.Core
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
-        public static PreJoinsData<T, TOther> OuterJoin<T, TOther>()
+        public PreJoinsData<T, TOther> OuterJoin<T, TOther>()
             where T : BlackHoleEntity where TOther : BlackHoleEntity
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DBName,
                 JoinType = "full outer"
             };
         }
@@ -49,11 +68,12 @@ namespace BlackHole.Core
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
-        public static PreJoinsData<T, TOther> LeftJoin<T, TOther>()
+        public PreJoinsData<T, TOther> LeftJoin<T, TOther>()
             where T : BlackHoleEntity where TOther : BlackHoleEntity
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DBName,
                 JoinType = "left"
             };
         }
@@ -65,11 +85,12 @@ namespace BlackHole.Core
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
-        public static PreJoinsData<T, TOther> RightJoin<T, TOther>()
+        public PreJoinsData<T, TOther> RightJoin<T, TOther>()
             where T : BlackHoleEntity where TOther : BlackHoleEntity
         {
             return new PreJoinsData<T, TOther>()
             {
+                DatabaseName = DBName,
                 JoinType = "right"
             };
         }

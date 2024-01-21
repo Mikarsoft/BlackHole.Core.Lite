@@ -1,4 +1,5 @@
 ﻿using BlackHole.Internal;
+using BlackHole.Lite.Configuration;
 using System.Reflection;
 
 namespace BlackHole.Configuration
@@ -14,118 +15,82 @@ namespace BlackHole.Configuration
         /// and also registers all the Entities of the Project to the BHDataProvider.
         /// </summary>
         /// <param name="dataPath">The Path of the Database</param>
-        public static void SuperNova(string dataPath)
+        public static void SuperNova(Action<BlackHoleLiteSettings> settings)
         {
-            if (DatabaseConfiguration.IsAutoUpdateOn())
-            {
-                Assembly GameAssembly = Assembly.GetCallingAssembly();
-                string tempPath = Path.Combine(dataPath, "BlackHoleData");
-                ScanConnectionString("BhDatabase", tempPath);
-                DataPathAndLogs(tempPath);
-                BuildDatabase(GameAssembly, "BhDatabase");
-            }
-        }
+            BlackHoleLiteSettings InsideSettings = new();
 
-        /// <summary>
-        /// Creates or Updates the Database Automatically into the specified Path
-        /// and also registers all the Entities of the Project to the BHDataProvider.
-        /// </summary>
-        /// <param name="dataPath">The Path of the Database</param>
-        public static void SuperNova()
-        {
-            if (DatabaseConfiguration.IsAutoUpdateOn())
-            {
-                Assembly GameAssembly = Assembly.GetCallingAssembly();
-                string tempPath = Path.Combine(GameAssembly.Location, "..", "BlackHoleData");
-                ScanConnectionString("BhDatabase", tempPath);
-                DataPathAndLogs(tempPath);
-                BuildDatabase(GameAssembly, "BhDatabase");
-            }
-        }
+            settings.Invoke(InsideSettings);
 
-        /// <summary>
-        /// Creates or Updates the Database Automatically into the specified Path
-        /// and also registers all the Entities of the Project to the BHDataProvider.
-        /// </summary>
-        /// <param name="dataPath">The Path of the Database</param>
-        public static void SuperNova(Action<List<string>> multipleDatabases)
-        {
-            if (DatabaseConfiguration.IsAutoUpdateOn())
-            {
-                Assembly GameAssembly = Assembly.GetCallingAssembly();
-                string tempPath = Path.Combine(GameAssembly.Location, "..", "BlackHoleData");
-                List<string> databases = new();
-                multipleDatabases.Invoke(databases);
-                ScanConnectionString("BhDatabase", tempPath);
-                DataPathAndLogs(tempPath);
-                BuildDatabase(GameAssembly, databases[0]);
-            }
-        }
+            string dataPath;
 
-        /// <summary>
-        /// Creates or Updates the Database Automatically into the specified Path
-        /// and also registers all the Entities of the Project to the BHDataProvider.
-        /// </summary>
-        /// <param name="dataPath">The Path of the Database</param>
-        /// <param name="databaseName">The Name of the Database</param>
-        public static void SuperNova(string dataPath, string databaseName)
-        {
-            if (DatabaseConfiguration.IsAutoUpdateOn())
+            if (string.IsNullOrEmpty(InsideSettings.DataPath.DataPath))
             {
-                Assembly GameAssembly = Assembly.GetCallingAssembly();
-                string tempPath = Path.Combine(dataPath, "BlackHoleData");
-                ScanConnectionString(databaseName, tempPath);
-                DataPathAndLogs(tempPath);
-                BuildDatabase(GameAssembly, databaseName);
-            }
-        }
-
-        /// <summary>
-        /// Creates or Updates the Database Automatically into the specified Path
-        /// and also registers all the Entities of the Project to the BHDataProvider.
-        /// </summary>
-        /// <param name="dataPath">The Path of the Database</param>
-        /// <param name="databaseName">The Name of the Database</param>
-        public static void SuperNova(string dataPath, Action<List<string>> multipleDatabases)
-        {
-            if (DatabaseConfiguration.IsAutoUpdateOn())
-            {
-                Assembly GameAssembly = Assembly.GetCallingAssembly();
-                string tempPath = Path.Combine(dataPath, "BlackHoleData");
-                List<string> databases = new();
-                multipleDatabases.Invoke(databases);
-                ScanConnectionStrings(databases, tempPath);
-                DataPathAndLogs(tempPath);
-                BuildDatabase(GameAssembly, databases[0]);
-            }
-        }
-
-        private static void BuildDatabase(Assembly callingAssembly, string databaseName)
-        {
-            BHDatabaseBuilder databaseBuilder = new();
-
-            if (databaseBuilder.CreateDatabase(databaseName))
-            {
-                CreateOrUpdateTables(callingAssembly, databaseBuilder);
+                dataPath = AppDomain.CurrentDomain.BaseDirectory;
             }
             else
             {
-                throw new Exception("The Path to the database is inaccessible...");
+                dataPath = InsideSettings.DataPath.DataPath;
             }
+
+            dataPath.SetDataPathAndLogging();
+
+            List<string> databaseNames = InsideSettings.DbSettings.Select(x => x.DatabaseName).ToList();
+
+            if(databaseNames.Count != databaseNames.Distinct().Count())
+            {
+                throw new Exception("Error. There are multiple databases with the same name. Please remove duplicate database names.");
+            }
+
+            InsideSettings.DbSettings.CreateConnectionStrings();
+
+            Assembly GameAssembly = Assembly.GetCallingAssembly();
+
+            InsideSettings.BuildDatabases(GameAssembly);
         }
 
-        private static void CreateOrUpdateTables(Assembly callingAssembly, BHDatabaseBuilder databaseBuilder)
+        private static void BuildDatabases(this BlackHoleLiteSettings settings , Assembly callingAssembly)
         {
+            BHDatabaseBuilder databaseBuilder = new();
             BHTableBuilder tableBuilder = new();
             BHNamespaceSelector namespaceSelector = new();
             BHInitialDataBuilder dataBuilder = new();
-            tableBuilder.BuildMultipleTables(namespaceSelector.GetAllBHEntities(callingAssembly));
-            if (databaseBuilder.IsCreatedFirstTime())
+
+            foreach (DatabaseSettings dbSettings in settings.DbSettings)
             {
-                dataBuilder.InsertDefaultData(namespaceSelector.GetInitialData(callingAssembly));
+                if (databaseBuilder.CreateDatabase(dbSettings.DatabaseName))
+                {
+                    tableBuilder.SwitchConnectionString(dbSettings.ConnectionString);
+
+                    if (string.IsNullOrEmpty(dbSettings.UsingNamespace))
+                    {
+                        tableBuilder.BuildMultipleTables(namespaceSelector.GetAllBHEntities(callingAssembly));
+
+                        if (databaseBuilder.IsCreatedFirstTime())
+                        {
+                            dataBuilder.InsertDefaultData(namespaceSelector.GetInitialData(callingAssembly), dbSettings.DatabaseName);
+                        }
+
+                        dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViews(callingAssembly), dbSettings.DatabaseName);
+                    }
+                    else
+                    {
+                        tableBuilder.BuildMultipleTables(namespaceSelector.GetBHEntitiesInNamespace(callingAssembly, dbSettings.UsingNamespace));
+
+                        if (databaseBuilder.IsCreatedFirstTime())
+                        {
+                            dataBuilder.InsertDefaultData(namespaceSelector.GetInitialDataInNamespace(callingAssembly, dbSettings.UsingNamespace), dbSettings.DatabaseName);
+                        }
+
+                        dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViewsInNamespace(callingAssembly, dbSettings.UsingNamespace), dbSettings.DatabaseName);
+                    }
+
+                    tableBuilder.CleanupConstraints();
+                }
+                else
+                {
+                    throw new Exception("The Path to the database is inaccessible...");
+                }
             }
-            dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViews(callingAssembly));
-            tableBuilder.CleanupConstraints();
         }
 
         /// <summary>
@@ -149,6 +114,17 @@ namespace BlackHole.Configuration
         }
 
         /// <summary>
+        /// Checks the database's condition
+        /// </summary>
+        /// <returns>Database is Up</returns>
+        public static bool TestDatabase(string databaseName)
+        {
+            BHDatabaseBuilder databaseBuilder = new();
+            return databaseBuilder.DoesDbExists(databaseName);
+        }
+
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="databaseName"></param>
@@ -157,21 +133,6 @@ namespace BlackHole.Configuration
         {
             BHDatabaseBuilder databaseBuilder = new();
             return databaseBuilder.DropDatabase(databaseName);
-        }
-
-        private static void ScanConnectionString(string ConnectionString, string DataPath)
-        {
-            DatabaseConfiguration.ScanConnectionString(Path.Combine(DataPath, $"{ConnectionString}.db3"));
-        }
-
-        private static void ScanConnectionStrings(List<string> ConnectionStrings, string DataPath)
-        {
-            DatabaseConfiguration.ScanConnectionStrings(ConnectionStrings, DataPath);
-        }
-
-        private static void DataPathAndLogs(string DataPath)
-        {
-            DatabaseConfiguration.LogsSettings(DataPath);
         }
     }
 }

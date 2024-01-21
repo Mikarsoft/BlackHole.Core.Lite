@@ -16,14 +16,11 @@ namespace BlackHole.Core
     {
         private readonly SqliteExecutionProvider _executionProvider;
 
-        /// <summary>
-        /// An Interface that gives all
-        /// the required methods to perform custom sql commands
-        /// <para>It's already registered in the ServiceCollection and it can be used to 
-        /// your services with Dependency Injection</para>
-        /// <para>The connection is automatically generated and disposed after 
-        /// each execution</para>
-        /// </summary>
+        internal BHConnection(string databaseName)
+        {
+            _executionProvider = BHDataProviderSelector.GetExecutionProvider(databaseName);
+        }
+
         internal BHConnection()
         {
             _executionProvider = BHDataProviderSelector.GetExecutionProvider();

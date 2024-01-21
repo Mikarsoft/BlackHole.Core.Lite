@@ -8,13 +8,11 @@ namespace BlackHole.DataProviders
     internal class SqliteDataProvider
     {
         #region Constructor
-        private readonly string _connectionString;
         internal readonly string insertedOutput = "returning Id";
         internal readonly bool skipQuotes = true;
 
-        internal SqliteDataProvider(string connectionString)
+        internal SqliteDataProvider()
         {
-            _connectionString = connectionString;
         }
         #endregion
 
@@ -41,7 +39,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
                 return default;
             }
         }
@@ -64,7 +62,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bhTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), bhTransaction.connection.ConnectionString));
             }
             return default;
         }
@@ -73,7 +71,6 @@ namespace BlackHole.DataProviders
         #region Execution Methods
         public int InsertScalar<T>(string commandStart, string commandEnd, T entry, string connectionString)
         {
-            connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
             return ExecuteEntryScalar($"{commandStart}){commandEnd}) {insertedOutput};", entry, connectionString);
         }
 
@@ -99,8 +96,6 @@ namespace BlackHole.DataProviders
         {
             try
             {
-                connectionString =  string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
-
                 using (SqliteConnection connection = new(connectionString))
                 {
                     connection.Open();
@@ -113,7 +108,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
                 return false;
             }
         }
@@ -132,7 +127,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bhTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), bhTransaction.connection.ConnectionString));
                 return false;
             }
         }
@@ -151,7 +146,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bhTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString(), bhTransaction.connection.ConnectionString));
                 return false;
             }
         }
@@ -160,8 +155,6 @@ namespace BlackHole.DataProviders
         {
             try
             {
-                connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
-
                 using (SqliteConnection connection = new(connectionString))
                 {
                     connection.Open();
@@ -174,7 +167,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString(), connectionString));
                 return false;
             }
         }
@@ -185,7 +178,6 @@ namespace BlackHole.DataProviders
             try
             {
                 T? result = default;
-                connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
 
                 using (SqliteConnection connection = new(connectionString))
                 {
@@ -212,7 +204,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
                 return default;
             }
         }
@@ -222,8 +214,8 @@ namespace BlackHole.DataProviders
             try
             {
                 List<T> result = new();
-                connectionString = string.IsNullOrEmpty(connectionString) ? _connectionString : connectionString;
-                using (SqliteConnection connection = new(_connectionString))
+
+                using (SqliteConnection connection = new(connectionString))
                 {
                     connection.Open();
                     SqliteCommand Command = new(commandText, connection);
@@ -247,7 +239,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
                 return new List<T>();
             }
         }
@@ -280,7 +272,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bHTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString(), bHTransaction.connection.ConnectionString));
                 return default;
             }
         }
@@ -312,7 +304,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bHTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString(), bHTransaction.connection.ConnectionString));
                 return new List<T>();
             }
         }
@@ -358,9 +350,20 @@ namespace BlackHole.DataProviders
                     if (!reader.IsDBNull(i))
                     {
                         PropertyInfo? property = properties.FirstOrDefault(x => string.Equals(x.Name, reader.GetName(i), StringComparison.OrdinalIgnoreCase));
+
                         if (property != null)
                         {
-                            if (property.PropertyType == typeof(Guid))
+                            Type compairType = property.PropertyType;
+
+                            if (property.Name.Contains("Nullable"))
+                            {
+                                if (property.PropertyType.GenericTypeArguments != null && property.PropertyType.GenericTypeArguments.Length > 0)
+                                {
+                                    compairType = property.PropertyType.GenericTypeArguments[0];
+                                }
+                            }
+
+                            if (compairType == typeof(Guid))
                             {
                                 type.GetProperty(property.Name)?.SetValue(obj, reader.GetGuid(i));
                             }
@@ -375,7 +378,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => ex.Message.CreateErrorLogs($"Object_Mapping_{typeof(T).Name}", "MapperError", ex.ToString()));
+                Task.Factory.StartNew(() => ex.Message.CreateErrorLogs($"Object_Mapping_{typeof(T).Name}", "MapperError", ex.ToString(), "Mapper"));
                 return default;
             }
         }

@@ -11,7 +11,7 @@ namespace BlackHole.Internal
 
         internal bool DropDatabase(string databaseName)
         {
-            string databaseLocation = _multiDatabaseSelector.GetServerConnection(databaseName);
+            string databaseLocation = _multiDatabaseSelector.GetDatabasePath(databaseName);
 
             try
             {
@@ -27,14 +27,14 @@ namespace BlackHole.Internal
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString(), $"Drop {databaseName}"));
                 return false;
             }
         }
 
         internal bool CreateDatabase(string databaseName)
         {
-            string databaseLocation = _multiDatabaseSelector.GetServerConnection(databaseName);
+            string databaseLocation = _multiDatabaseSelector.GetDatabasePath(databaseName);
 
             try
             {
@@ -42,19 +42,25 @@ namespace BlackHole.Internal
                 {
                     var stream = File.Create(databaseLocation);
                     stream.Dispose();
+                    DatabaseStatics.InitializeData = true;
                 }
+                else
+                {
+                    DatabaseStatics.InitializeData = false;
+                }
+
                 return true;
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString(), $"Create {databaseName}"));
                 return false;
             }
         }
 
         internal bool DoesDbExists(string databaseName)
         {
-            string databaseLocation = _multiDatabaseSelector.GetServerConnection(databaseName);
+            string databaseLocation = _multiDatabaseSelector.GetDatabasePath(databaseName);
 
             try
             {
@@ -69,7 +75,7 @@ namespace BlackHole.Internal
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString()));
+                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString(), $"Check {databaseName}"));
                 return false;
             }
         }
