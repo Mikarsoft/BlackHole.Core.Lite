@@ -13,7 +13,8 @@ namespace BlackHole.Lite.Core
 
             using (Aes aes = Aes.Create())
             {
-                aes.Key = Encoding.UTF8.GetBytes(key);
+                string md5Gen = key.CreateMD5Hash();
+                aes.Key = Encoding.UTF8.GetBytes(md5Gen);
                 aes.IV = iv;
 
                 ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
@@ -43,7 +44,8 @@ namespace BlackHole.Lite.Core
 
             using (Aes aes = Aes.Create())
             {
-                aes.Key = Encoding.UTF8.GetBytes(key);
+                string md5Gen = key.CreateMD5Hash();
+                aes.Key = Encoding.UTF8.GetBytes(md5Gen);
                 aes.IV = iv;
                 ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
 
@@ -57,6 +59,21 @@ namespace BlackHole.Lite.Core
                         }
                     }
                 }
+            }
+
+            return result;
+        }
+
+        public static string CreateMD5Hash(this string input)
+        {
+            string result = string.Empty;
+
+            using (MD5 md5 = MD5.Create())
+            {
+                byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                result = Convert.ToHexString(hashBytes);
             }
 
             return result;
