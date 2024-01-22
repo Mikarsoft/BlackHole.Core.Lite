@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BlackHole.Lite.Core
+namespace BlackHole.Core
 {
     public static class BHCryptographer
     {
