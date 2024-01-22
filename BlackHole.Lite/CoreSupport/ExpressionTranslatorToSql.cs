@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data.Common;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace BlackHole.CoreSupport
@@ -578,7 +579,7 @@ namespace BlackHole.CoreSupport
 
                         index++;
 
-                        if(children.Count > 1)
+                        if (child != parent)
                         {
                             ColumnAndParameter childCols = child.TranslateExpression(index, letter);
 
@@ -598,7 +599,18 @@ namespace BlackHole.CoreSupport
                 }
             }
 
-            List<ExpressionsData> parents = data.Where(x => x.memberValue == null && !x.IsNullValue && x.methodData.Count == 0 && x.expressionType != ExpressionType.Default).ToList();
+            List<ExpressionsData> selfCompair = data.Where(x => x.memberValue == null && x.leftMember != null && x.rightMember != null && x.methodData.Count == 0).ToList();
+
+            foreach(ExpressionsData self in selfCompair)
+            {
+                ExpressionsData parent = data[self.parentIndex];
+                ColumnAndParameter selfCompairCols = self.TranslateSelfCompairExpression(letter);
+
+                parent.sqlCommand = $"({selfCompairCols.Column})";
+                parent.leftChecked = false;
+            }
+
+            List<ExpressionsData> parents = data.Where(x => x.memberValue == null && !x.IsNullValue && x.methodData.Count == 0 && x.expressionType.IsParentExpressionType()).ToList();
 
             if (parents.Count > 1)
             {
@@ -632,6 +644,36 @@ namespace BlackHole.CoreSupport
 
             return new ColumnsAndParameters { Columns = data[0].sqlCommand, Parameters = parameters, Count = index };
         }
+
+        private static bool IsParentExpressionType(this ExpressionType expType)
+        {
+            return expType switch
+            {
+                ExpressionType.AndAlso or ExpressionType.OrElse => true,
+                _ => false
+            };
+        }
+
+        private static ColumnAndParameter TranslateSelfCompairExpression(this ExpressionsData expression, string? letter)
+        {
+            string? leftPart = expression.leftMember?.ToString().Split('.')[1];
+            string? rightPart = expression.rightMember?.ToString().Split(".")[1];
+            string subLetter = letter != string.Empty ? $"{letter}." : string.Empty;
+
+            string column = expression.expressionType switch
+            {
+                ExpressionType.Equal => $"{subLetter}{leftPart} = {subLetter}{rightPart}",
+                ExpressionType.GreaterThanOrEqual => $"{subLetter}{leftPart} >= {subLetter}{rightPart}",
+                ExpressionType.LessThanOrEqual => $"{leftPart} <= {rightPart}",
+                ExpressionType.LessThan => $"{subLetter} {leftPart} < {subLetter}{rightPart}",
+                ExpressionType.GreaterThan => $"{subLetter} {leftPart} > {subLetter}{rightPart}",
+                ExpressionType.NotEqual => $"{subLetter} {leftPart} != {subLetter}{rightPart}",
+                _ => string.Empty
+            };
+
+            return new ColumnAndParameter { Column = column};
+        }
+
 
         private static ColumnAndParameter TranslateExpression(this ExpressionsData expression, int index, string? letter)
         {
