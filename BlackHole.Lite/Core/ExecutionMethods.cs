@@ -37,7 +37,7 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T,bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
@@ -69,7 +69,7 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static int Count<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
 
             if (context.WithActivator)
             {
@@ -195,7 +195,7 @@ namespace BlackHole.Core
         /// <returns>Entity</returns>
         public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
@@ -215,7 +215,7 @@ namespace BlackHole.Core
         /// <returns>Entity</returns>
         public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
@@ -234,7 +234,7 @@ namespace BlackHole.Core
         /// <returns>List of Entities</returns>
         public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
@@ -253,7 +253,7 @@ namespace BlackHole.Core
         /// <returns>List of Entities</returns>
         public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, bhTransaction.transaction);
@@ -395,7 +395,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             sql.AdditionalParameters(entry);
             if (context.WithActivator)
             {
@@ -418,7 +418,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             sql.AdditionalParameters(entry);
             if (context.WithActivator)
             {
@@ -586,7 +586,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool DeleteEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.JustExecute($"update {context.ThisTable} set Inactive = 1 where {sql.Columns}", sql.Parameters, context.ConnectionString);
@@ -608,7 +608,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool DeleteEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.JustExecute($"update {context.ThisTable} set Inactive=1 where {sql.Columns}", sql.Parameters, bhTransaction.transaction);
@@ -626,7 +626,7 @@ namespace BlackHole.Core
         /// <returns>List of Ids</returns>
         public static List<int> GetIdsWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.Query<int>($"select Id from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
@@ -645,7 +645,7 @@ namespace BlackHole.Core
         /// <returns>List of Ids</returns>
         public static List<int> GetIdsWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.Body.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.Query<int>($"select Id from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, bhTransaction.transaction);

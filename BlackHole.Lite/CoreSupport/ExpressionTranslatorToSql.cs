@@ -1,17 +1,26 @@
-﻿using System.Data.Common;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 
 namespace BlackHole.CoreSupport
 {
     internal static class ExpressionTranslatorToSql
     {
-        internal static ColumnsAndParameters SplitMembers<T>(this Expression expression, string? letter, List<BlackHoleParameter>? DynamicParams, int index)
+        internal static ColumnsAndParameters SplitMembers<T>(this Expression<Func<T, bool>> fullexpression, string? letter, List<BlackHoleParameter>? DynamicParams, int index)
         {
             List<ExpressionsData> expressionTree = new();
 
-            BinaryExpression? currentOperation = expression as BinaryExpression;
-            MethodCallExpression? methodCallOperation = expression as MethodCallExpression;
+            BinaryExpression? currentOperation = null;
+            MethodCallExpression? methodCallOperation = null;
+
+            if (fullexpression.Body is BinaryExpression bExp)
+            {
+                currentOperation = bExp;
+            }
+
+            if (fullexpression.Body is MethodCallExpression mcExp)
+            {
+                methodCallOperation = mcExp;
+            }
 
             int currentIndx = 0;
             bool startTranslate = false;
@@ -32,7 +41,7 @@ namespace BlackHole.CoreSupport
                     memberValue = null
                 });
             }
-            else if(expression is UnaryExpression unExpr)
+            else if(fullexpression.Body is UnaryExpression unExpr)
             {
                 if (unExpr.Operand is MemberExpression mExpr)
                 {
@@ -52,7 +61,7 @@ namespace BlackHole.CoreSupport
                     });
                 }
             }
-            else if(expression is MemberExpression memberExpr)
+            else if(fullexpression.Body is MemberExpression memberExpr)
             {
                 ExpressionType ExpType = ExpressionType.Equal;
 
@@ -490,8 +499,24 @@ namespace BlackHole.CoreSupport
             {
                 try
                 {
-                    thisBranch.memberValue = Expression.Lambda(memberExp).Compile().DynamicInvoke();
-                    thisBranch.IsNullValue = thisBranch.memberValue == null;
+                    var lExp = Expression.Lambda(memberExp);
+
+                    if(lExp.Parameters.Count > 0)
+                    {
+                        thisBranch.memberValue = lExp.Compile().DynamicInvoke();
+                        thisBranch.IsNullValue = thisBranch.memberValue == null;
+                    }
+                    else
+                    {
+                        if (isRight)
+                        {
+                            thisBranch.rightMember = memberExp;
+                        }
+                        else
+                        {
+                            thisBranch.leftMember = memberExp;
+                        }
+                    }
                 }
                 catch
                 {
@@ -1021,7 +1046,7 @@ namespace BlackHole.CoreSupport
             }
 
             string? letter = data.TablesToLetters.First(x => x.Table == typeof(T)).Letter;
-            ColumnsAndParameters colsAndParams = predicate.Body.SplitMembers<T>(letter, data.DynamicParams, data.ParamsCount);
+            ColumnsAndParameters colsAndParams = predicate.SplitMembers<T>(letter, data.DynamicParams, data.ParamsCount);
             data.DynamicParams = colsAndParams.Parameters;
             data.ParamsCount = colsAndParams.Count;
 
@@ -1045,7 +1070,7 @@ namespace BlackHole.CoreSupport
             }
 
             string? letter = data.TablesToLetters.First(x => x.Table == typeof(TOther)).Letter;
-            ColumnsAndParameters colsAndParams = predicate.Body.SplitMembers<TOther>(letter, data.DynamicParams, data.ParamsCount);
+            ColumnsAndParameters colsAndParams = predicate.SplitMembers<TOther>(letter, data.DynamicParams, data.ParamsCount);
             data.DynamicParams = colsAndParams.Parameters;
             data.ParamsCount = colsAndParams.Count;
 
