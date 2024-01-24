@@ -355,7 +355,7 @@ namespace BlackHole.DataProviders
                         {
                             Type compairType = property.PropertyType;
 
-                            if (property.Name.Contains("Nullable"))
+                            if (property.PropertyType.Name.Contains("Nullable"))
                             {
                                 if (property.PropertyType.GenericTypeArguments != null && property.PropertyType.GenericTypeArguments.Length > 0)
                                 {
@@ -365,11 +365,24 @@ namespace BlackHole.DataProviders
 
                             if (compairType == typeof(Guid))
                             {
-                                type.GetProperty(property.Name)?.SetValue(obj, reader.GetGuid(i));
+                                if(reader.GetGuid(i) is Guid guidValue)
+                                {
+                                    type.GetProperty(property.Name)?.SetValue(obj, guidValue);
+                                }
+                            }
+                            else if(compairType == typeof(DateTime))
+                            {
+                                if(reader.GetDateTime(i) is DateTime dtValue)
+                                {
+                                    type.GetProperty(property.Name)?.SetValue(obj, dtValue);
+                                }
                             }
                             else
                             {
-                                type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(reader.GetValue(i), property.PropertyType));
+                                if(reader.GetValue(i) is object value)
+                                {
+                                    type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
+                                }
                             }
                         }
                     }
