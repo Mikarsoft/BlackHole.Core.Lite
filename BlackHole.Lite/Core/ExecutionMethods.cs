@@ -52,6 +52,39 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
+        public static bool Any<T>(this BHEntityContext<T> context, BHTransaction bHTransaction) where T : BlackHoleEntity
+        {
+            string limit = 1.GetLimiter();
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 {limit}", null, bHTransaction.transaction) != null;
+            }
+            return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} {limit}", null, bHTransaction.transaction) != null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bHTransaction) where T : BlackHoleEntity
+        {
+            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            string limit = 1.GetLimiter();
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, bHTransaction.transaction) != null;
+            }
+            return _dataProvider.QueryFirst<T>($"select Id ,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, bHTransaction.transaction) != null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public static int Count<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
         {
             if (context.WithActivator)

@@ -21,9 +21,18 @@ namespace BlackHole.CoreSupport
 
         internal BlackHoleTransaction(string connectionString)
         {
-            connection = BHDataProviderSelector.GetConnection(connectionString);
-            connection.Open();
-            _transaction = connection.BeginTransaction();
+            try
+            {
+                connection = BHDataProviderSelector.GetConnection(connectionString);
+                connection.Open();
+                _transaction = connection.BeginTransaction();
+            }
+            catch
+            {
+                connection = BHDataProviderSelector.GetConnection();
+                connection.Open();
+                _transaction = connection.BeginTransaction();
+            }
         }
 
         internal bool Commit()

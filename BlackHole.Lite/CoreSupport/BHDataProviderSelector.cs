@@ -12,11 +12,11 @@ namespace BlackHole.CoreSupport
             if(string.IsNullOrWhiteSpace(databaseName))
             {
                 string datapathDefault = Path.Combine(DatabaseStatics.DataPath, DatabaseStatics.DefaultConnectionString);
-                return $"Data Source={datapathDefault}.db3;";
+                return $"Data Source={datapathDefault}.db3;Pooling=true;";
             }
 
             string dataPath = Path.Combine(DatabaseStatics.DataPath, databaseName);
-            return $"Data Source={dataPath}.db3;";
+            return $"Data Source={dataPath}.db3;Pooling=true;";
         }
 
         internal static string GetDefaultDbName()
