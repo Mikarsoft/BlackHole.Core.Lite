@@ -243,6 +243,11 @@ namespace BlackHole.CoreSupport
                                 expressionTree[currentIndx].rightMethodMember = rightmethodMember;
                             }
 
+                            if(expressionTree[currentIndx].operation?.Right is UnaryExpression unaryMember)
+                            {
+                                expressionTree[currentIndx].memberValue = Expression.Lambda(unaryMember).Compile().DynamicInvoke();
+                            }
+
                             expressionTree[currentIndx].rightChecked = true;
                         }
 
@@ -268,6 +273,11 @@ namespace BlackHole.CoreSupport
                             if (expressionTree[currentIndx].operation?.Left is MethodCallExpression leftmethodMember)
                             {
                                 expressionTree[currentIndx].leftMethodMember = leftmethodMember;
+                            }
+
+                            if (expressionTree[currentIndx].operation?.Left is UnaryExpression unaryMember)
+                            {
+                                expressionTree[currentIndx].memberValue = Expression.Lambda(unaryMember).Compile().DynamicInvoke();
                             }
 
                             expressionTree[currentIndx].leftChecked = true;
