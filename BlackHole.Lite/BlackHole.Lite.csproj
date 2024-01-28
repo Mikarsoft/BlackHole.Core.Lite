@@ -6,14 +6,31 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>BlackHole.Lite</Title>
-    <AssemblyVersion>7.0.0</AssemblyVersion>
-    <FileVersion>7.0.0</FileVersion>
-    <Version>7.0.0</Version>
+    <AssemblyVersion>0.9.0</AssemblyVersion>
+    <FileVersion>0.9.0</FileVersion>
+    <Version>0.9.0</Version>
     <Copyright>Mikarsoft Ltd</Copyright>
     <PackageProjectUrl>https://mikarsoft.com</PackageProjectUrl>
     <PackageIcon>bhunity.png</PackageIcon>
 	<PackageOutputPath>../nupkg</PackageOutputPath>
+	<NeutralLanguage>en</NeutralLanguage>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/Mikarsoft/BlackHole.Core.Lite</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<Description>A Simple version of BlackHole.Core.ORM, that works with SQLite only.</Description>
+	<PackageTags>orm;sqlite;blackhole;easy;fast;object;relational;mapper;sql;lite</PackageTags>
+	<PackageReleaseNotes>- dotnet7 preview package
+- added multiple sqlite databases support
+- fixed linq bugs for null values and booleans
+- added 'any' and 'count' sql methods</PackageReleaseNotes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="7.0.14" />
