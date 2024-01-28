@@ -1,4 +1,4 @@
-<h2>A Simple version of BlackHole.Core.ORM, that works with SQLite only.</h2>
+## A Simple version of BlackHole.Core.ORM, that works with SQLite only.
 
 -It is recommended for small Console Applications or Windows and Linux Services.
 -It can Create and Manage multiple Sqlite database on the fly.

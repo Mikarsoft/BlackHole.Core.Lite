@@ -23,9 +23,15 @@
 - added multiple sqlite databases support
 - fixed linq bugs for null values and booleans
 - added 'any' and 'count' sql methods</PackageReleaseNotes>
+	<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
