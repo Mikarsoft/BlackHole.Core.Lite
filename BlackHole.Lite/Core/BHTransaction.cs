@@ -25,6 +25,14 @@ namespace BlackHole.Core
             transaction = new BlackHoleTransaction(DBName.BuildConnectionString());
         }
 
+        /// <summary>
+        /// A Transaction Object that automatically creates a connection and a transaction
+        /// on specific database file
+        /// and it can be used in every BlackHole Method.
+        /// <para>Tip: Don't forget to dispose this Object after using it. If you don't perform any 
+        /// action on this class, the Commit Method gets triggered on Dispose</para>
+        /// </summary>
+        /// <param name="databaseName"></param>
         public BHTransaction(string databaseName)
         {
             DBName = databaseName;

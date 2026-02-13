@@ -14,4 +14,11 @@ namespace BlackHole.CoreSupport
         internal string? ParamName { get; set; }
         internal object? Value { get; set; }
     }
+
+    internal class IncludeQueryCommand
+    {
+        internal string Query { get; set; } = string.Empty;
+
+        internal string Joins { get; set; } = string.Empty;
+    }
 }

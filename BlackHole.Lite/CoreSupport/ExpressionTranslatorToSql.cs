@@ -1,10 +1,80 @@
-﻿using System.Linq.Expressions;
+﻿using BlackHole.DataProviders;
+using BlackHole.Lite.Entities;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace BlackHole.CoreSupport
 {
     internal static class ExpressionTranslatorToSql
     {
+        internal static IncludeQueryCommand BuildIncludeSql<T>(this List<IncludeInfo> includes)
+        {
+            string rootTable = typeof(T).Name;
+
+            var columns = new List<string>();
+            var joins = new List<string>();
+
+            foreach (var inc in includes)
+            {
+                string relatedTable = inc.EntityType.Name + "s"; // e.g. Customer → Customers
+                string alias = inc.ColumnPrefix!.TrimEnd('_');   // e.g. "Customer_" → "Customer"
+
+                // Add aliased columns for this entity
+                var props = inc.EntityType.GetProperties()
+                    .Where(p => !p.PropertyType.IsGenericType ||
+                           (p.PropertyType.GetGenericTypeDefinition() != typeof(BHIncludeList<>) &&
+                            p.PropertyType.GetGenericTypeDefinition() != typeof(BHIncludeItem<>)));
+
+                foreach (var prop in props)
+                {
+                    columns.Add($"{alias}.{prop.Name} AS {inc.ColumnPrefix}{prop.Name}");
+                }
+
+                // Build the JOIN
+                string parentAlias;
+
+                if (inc.ParentType == null)
+                {
+                    parentAlias = rootTable;
+                }
+                else
+                {
+                    parentAlias = inc.ParentPkPrefix!.TrimEnd('_');
+                }
+
+                string joinCondition;
+
+                if (inc.IsCollection)
+                {
+                    // One-to-many: child has FK pointing to parent
+                    // e.g. LEFT JOIN OrderItems Customer ON OrderItem.OrderId = Order.Id
+                    string fkName = inc.ParentType == null
+                        ? $"{rootTable}Id"                          // e.g. OrderId
+                        : $"{inc.ParentType.Name}Id";               // e.g. CustomerId
+
+                    joinCondition = $"{alias}.{fkName} = {parentAlias}.Id";
+                }
+                else
+                {
+                    // Many-to-one: parent has FK pointing to child
+                    // e.g. LEFT JOIN Customers Customer ON Order.CustomerId = Customer.Id
+                    string fkName = $"{inc.NavigationProperty!.Name}Id"; // e.g. CustomerId
+
+                    joinCondition = $"{parentAlias}.{fkName} = {alias}.Id";
+                }
+
+                joins.Add($"LEFT JOIN {relatedTable} {alias} ON {joinCondition}");
+            }
+
+            string selectColumns = string.Join(", ", columns);
+            string joinClause = string.Join("\n", joins);
+
+            return new IncludeQueryCommand{
+                Query = selectColumns,
+                Joins = joinClause
+            };
+        }
+
         internal static ColumnsAndParameters SplitMembers<T>(this Expression<Func<T, bool>> fullexpression, string? letter, List<BlackHoleParameter>? DynamicParams, int index)
         {
             List<ExpressionsData> expressionTree = new();

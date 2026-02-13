@@ -108,6 +108,18 @@ namespace BlackHole.Core
             return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
         }
 
+        internal static BHEntityContext<T, G> MapEntity<T, G>(this BHEntityContext<T> context, string connectionString)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
+        }
+
+        internal static BHEntityContext<T, H> MapEntity<T, G, H>(this BHEntityContext<T, G> context, string connectionString)
+            where T : BlackHoleEntity where G : BlackHoleEntity where H : BlackHoleEntity
+        {
+            return new (context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
+        }
+
         internal static void AddStoredView<Dto>(StoredView addView, string databaseName)
         {
             StoredView? storedV = StoredViews.FirstOrDefault(x => x.DtoType == typeof(Dto) && x.DatabaseName == databaseName);

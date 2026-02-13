@@ -1,6 +1,7 @@
 ﻿using BlackHole.CoreSupport;
 using BlackHole.DataProviders;
 using BlackHole.Entities;
+using BlackHole.Lite.Entities;
 using System.Linq.Expressions;
 
 namespace BlackHole.Core
@@ -12,6 +13,207 @@ namespace BlackHole.Core
     public static class ExecutionMethods
     {
         internal static SqliteDataProvider _dataProvider = BHDataProviderSelector.GetDataProvider();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="include"></param>
+        /// <returns></returns>
+        public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
+            Expression<Func<T, BHIncludeItem<G>>> include)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            return context.MapEntity<T, G>(context.ConnectionString);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="include"></param>
+        /// <returns></returns>
+        public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
+            Expression<Func<T, BHIncludeList<G>>> include)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            return context.MapEntity<T, G>(context.ConnectionString);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <typeparam name="H"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="include"></param>
+        /// <returns></returns>
+        public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
+            Expression<Func<G, BHIncludeList<H>>> include)
+            where T : BlackHoleEntity where G : BlackHoleEntity where H : BlackHoleEntity
+        {
+            return context.MapEntity<T, G, H>(context.ConnectionString);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <typeparam name="H"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="include"></param>
+        /// <returns></returns>
+        public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
+            Expression<Func<G, BHIncludeItem<H>>> include)
+            where T : BlackHoleEntity where G : BlackHoleEntity where H : BlackHoleEntity
+        {
+            return context.MapEntity<T, G, H>(context.ConnectionString);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="Id"></param>
+        /// <returns></returns>
+        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id) 
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            BHParameters Params = new();
+            Params.Add("Id", Id);
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id and Inactive = 0", Params.Parameters, context.ConnectionString);
+            }
+            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id", Params.Parameters, context.ConnectionString);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="Id"></param>
+        /// <param name="bhTransaction"></param>
+        /// <returns></returns>
+        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id, BHTransaction bhTransaction) 
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            BHParameters Params = new();
+            Params.Add("Id", Id);
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id and Inactive = 0", Params.Parameters, bhTransaction.transaction);
+            }
+            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id", Params.Parameters, bhTransaction.transaction);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context) where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0", null, context.ConnectionString);
+            }
+            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable}", null, context.ConnectionString);
+        }
+
+        public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context, BHTransaction bhTransaction)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0", null, bhTransaction.transaction);
+            }
+            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable}", null, bhTransaction.transaction);
+        }
+
+        public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
+            Expression<Func<T, bool>> predicate)
+            where T : BlackHoleEntity  where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+            string limit = 1.GetLimiter();
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, context.ConnectionString);
+            }
+            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, context.ConnectionString);
+        }
+
+        public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
+            Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+            string limit = 1.GetLimiter();
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, bhTransaction.transaction);
+            }
+            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, bhTransaction.transaction);
+        }
+
+        public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
+            Expression<Func<T, bool>> predicate)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
+            }
+            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns}", sql.Parameters, context.ConnectionString);
+        }
+
+        public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
+            Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
+            where T : BlackHoleEntity where G : BlackHoleEntity
+        {
+            var includeCommand = context.Includes.BuildIncludeSql<T>();
+
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+
+            if (context.WithActivator)
+            {
+                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, bhTransaction.transaction);
+            }
+            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns}", sql.Parameters, bhTransaction.transaction);
+        }
 
         /// <summary>
         /// 
@@ -228,7 +430,7 @@ namespace BlackHole.Core
         /// <returns>Entity</returns>
         public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
@@ -248,7 +450,7 @@ namespace BlackHole.Core
         /// <returns>Entity</returns>
         public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             string limit = 1.GetLimiter();
             if (context.WithActivator)
             {
@@ -267,7 +469,7 @@ namespace BlackHole.Core
         /// <returns>List of Entities</returns>
         public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
@@ -286,7 +488,7 @@ namespace BlackHole.Core
         /// <returns>List of Entities</returns>
         public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
             {
                 return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, bhTransaction.transaction);
@@ -428,7 +630,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             sql.AdditionalParameters(entry);
             if (context.WithActivator)
             {
@@ -451,7 +653,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry, BHTransaction bhTransaction) where T : BlackHoleEntity
         {
-            ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             sql.AdditionalParameters(entry);
             if (context.WithActivator)
             {

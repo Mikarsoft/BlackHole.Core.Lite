@@ -4,8 +4,17 @@ using System.Text;
 
 namespace BlackHole.Core
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public static class BHCryptographer
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public static string EncryptString(this string plainText, string key)
         {
             byte[] iv = new byte[16];
@@ -36,6 +45,12 @@ namespace BlackHole.Core
             return Convert.ToBase64String(array);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cipherText"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public static string DecryptString(this string cipherText, string key)
         {
             byte[] iv = new byte[16];
@@ -64,6 +79,11 @@ namespace BlackHole.Core
             return result;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         public static string CreateMD5Hash(this string input)
         {
             string result = string.Empty;
@@ -79,6 +99,11 @@ namespace BlackHole.Core
             return result;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <returns></returns>
         public static string GenerateSHA1Hash(this string plainText)
         {
             return plainText.GenerateSHA1();

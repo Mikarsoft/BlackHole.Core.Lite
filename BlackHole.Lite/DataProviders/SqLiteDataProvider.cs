@@ -172,7 +172,6 @@ namespace BlackHole.DataProviders
             }
         }
 
-
         public T? QueryFirst<T>(string commandText, List<BlackHoleParameter>? parameters, string connectionString)
         {
             try
@@ -308,9 +307,263 @@ namespace BlackHole.DataProviders
                 return new List<T>();
             }
         }
+
+        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters, string connectionString, List<IncludeInfo> includes)
+        {
+            var rootList = new List<TRoot>();
+            var identityMap = new Dictionary<(Type, object), object>();
+            var wiredRelationships = new HashSet<(object parent, string nav, object child)>();
+
+            using (SqliteConnection connection = new(connectionString))
+            {
+                connection.Open();
+                SqliteCommand Command = new(commandText, connection);
+                ArrayToParameters(parameters, Command.Parameters);
+
+                using var reader = Command.ExecuteReader();
+
+                var rootColumns = BuildColumnMap(reader, typeof(TRoot), prefix: null);
+                var includeColumns = includes.Select(inc =>
+                    BuildColumnMap(reader, inc.EntityType, inc.ColumnPrefix)).ToList();
+
+                var parentColumnMaps = includes.Select(inc =>
+                {
+                    if (inc.ParentType == null) return null;
+                    return BuildColumnMap(reader, inc.ParentType, inc.ParentPkPrefix);
+                }).ToList();
+
+                while (reader.Read())
+                {
+                    var rootPk = reader.GetValue(rootColumns.PkIndex);
+                    var rootKey = (typeof(TRoot), rootPk);
+
+                    if (!identityMap.TryGetValue(rootKey, out var rootObj))
+                    {
+                        rootObj = MapColumns(reader, typeof(TRoot), rootColumns);
+
+                        if (rootObj != null)
+                        {
+                            identityMap[rootKey] = rootObj;
+                            rootList.Add((TRoot)rootObj);
+                        }
+                    }
+
+                    for (int i = 0; i < includes.Count; i++)
+                    {
+                        var inc = includes[i];
+                        var cols = includeColumns[i];
+
+                        if (reader.IsDBNull(cols.PkIndex)) continue;
+
+                        var relatedPk = reader.GetValue(cols.PkIndex);
+                        var relatedKey = (inc.EntityType, relatedPk);
+
+                        if (!identityMap.TryGetValue(relatedKey, out var relatedObj))
+                        {
+                            relatedObj = MapColumns(reader, inc.EntityType, cols);
+
+                            if (relatedObj != null)
+                            {
+                                identityMap[relatedKey] = relatedObj;
+                            }
+                        }
+
+                        object? parentObj;
+
+                        if (inc.ParentType == null)
+                        {
+                            parentObj = rootObj;
+                        }
+                        else
+                        {
+                            var parentMap = parentColumnMaps[i];
+
+                            if (parentMap == null || reader.IsDBNull(parentMap.PkIndex))
+                            {
+                                continue;
+                            }
+
+                            var parentPk = reader.GetValue(parentMap.PkIndex);
+                            identityMap.TryGetValue((inc.ParentType, parentPk), out parentObj);
+                        }
+
+                        if (parentObj != null && relatedObj != null)
+                        {
+                            if (inc.IsCollection)
+                            {
+                                var wireKey = (parentObj, inc.NavigationProperty!.Name, relatedObj);
+                                if (wiredRelationships.Add(wireKey))
+                                {
+                                    inc.AddToCollection(parentObj, relatedObj);
+                                }
+                            }
+                            else
+                            {
+                                inc.SetReference(parentObj, relatedObj);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return rootList;
+        }
+
+        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bHTransaction, List<IncludeInfo> includes)
+        {
+            var rootList = new List<TRoot>();
+            var identityMap = new Dictionary<(Type, object), object>();
+            var wiredRelationships = new HashSet<(object parent, string nav, object child)>();
+
+            SqliteConnection connection = bHTransaction.connection;
+            SqliteTransaction transaction = bHTransaction._transaction;
+            SqliteCommand Command = new(commandText, connection, transaction);
+            ArrayToParameters(parameters, Command.Parameters); ;
+
+            using var reader = Command.ExecuteReader();
+
+            var rootColumns = BuildColumnMap(reader, typeof(TRoot), prefix: null);
+            var includeColumns = includes.Select(inc =>
+                BuildColumnMap(reader, inc.EntityType, inc.ColumnPrefix)).ToList();
+
+            var parentColumnMaps = includes.Select(inc =>
+            {
+                if (inc.ParentType == null) return null;
+                return BuildColumnMap(reader, inc.ParentType, inc.ParentPkPrefix);
+            }).ToList();
+
+            while (reader.Read())
+            {
+                var rootPk = reader.GetValue(rootColumns.PkIndex);
+                var rootKey = (typeof(TRoot), rootPk);
+
+                if (!identityMap.TryGetValue(rootKey, out var rootObj))
+                {
+                    rootObj = MapColumns(reader, typeof(TRoot), rootColumns);
+
+                    if (rootObj != null)
+                    {
+                        identityMap[rootKey] = rootObj;
+                        rootList.Add((TRoot)rootObj);
+                    }
+                }
+
+                for (int i = 0; i < includes.Count; i++)
+                {
+                    var inc = includes[i];
+                    var cols = includeColumns[i];
+
+                    if (reader.IsDBNull(cols.PkIndex)) continue;
+
+                    var relatedPk = reader.GetValue(cols.PkIndex);
+                    var relatedKey = (inc.EntityType, relatedPk);
+
+                    if (!identityMap.TryGetValue(relatedKey, out var relatedObj))
+                    {
+                        relatedObj = MapColumns(reader, inc.EntityType, cols);
+
+                        if (relatedObj != null)
+                        {
+                            identityMap[relatedKey] = relatedObj;
+                        }
+                    }
+
+                    object? parentObj;
+
+                    if (inc.ParentType == null)
+                    {
+                        parentObj = rootObj;
+                    }
+                    else
+                    {
+                        var parentMap = parentColumnMaps[i];
+
+                        if (parentMap == null || reader.IsDBNull(parentMap.PkIndex))
+                        {
+                            continue;
+                        }
+
+                        var parentPk = reader.GetValue(parentMap.PkIndex);
+                        identityMap.TryGetValue((inc.ParentType, parentPk), out parentObj);
+                    }
+
+                    if (parentObj != null && relatedObj != null)
+                    {
+                        if (inc.IsCollection)
+                        {
+                            var wireKey = (parentObj, inc.NavigationProperty!.Name, relatedObj);
+                            if (wiredRelationships.Add(wireKey))
+                            {
+                                inc.AddToCollection(parentObj, relatedObj);
+                            }
+                        }
+                        else
+                        {
+                            inc.SetReference(parentObj, relatedObj);
+                        }
+                    }
+                }
+            }
+
+            return rootList;
+        }
         #endregion
 
         #region Object Mapping
+
+        private EntityColumnMap BuildColumnMap(SqliteDataReader reader, Type entityType, string? prefix)
+        {
+            var props = entityType.GetProperties();
+            var columnIndexes = new Dictionary<PropertyInfo, int>();
+            int pkIndex = -1;
+
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                string colName = reader.GetName(i);
+
+                // If using prefixed aliases like "Customer_Id", strip the prefix
+                if (prefix != null)
+                {
+                    if (!colName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+                    colName = colName.Substring(prefix.Length);
+                }
+
+                var prop = props.FirstOrDefault(p =>
+                    string.Equals(p.Name, colName, StringComparison.OrdinalIgnoreCase));
+
+                if (prop != null)
+                {
+                    columnIndexes[prop] = i;
+                    if (prop.Name == "Id") pkIndex = i; // or use [Key] attribute detection
+                }
+            }
+
+            return new EntityColumnMap { PkIndex = pkIndex, Columns = columnIndexes };
+        }
+
+        private object? MapColumns(SqliteDataReader reader, Type type, EntityColumnMap columnMap)
+        {
+            object? obj = Activator.CreateInstance(type);
+
+            foreach (var (property, columnIndex) in columnMap.Columns)
+            {
+                if (reader.IsDBNull(columnIndex)) continue;
+
+                Type targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+
+                if (targetType == typeof(Guid))
+                {
+                    property.SetValue(obj, reader.GetGuid(columnIndex));
+                }
+                else
+                {
+                    property.SetValue(obj, Convert.ChangeType(reader.GetValue(columnIndex), targetType));
+                }
+            }
+
+            return obj;
+        }
+
         private T? MapObject<T>(SqliteDataReader reader)
         {
             try

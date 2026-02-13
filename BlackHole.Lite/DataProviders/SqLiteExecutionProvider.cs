@@ -349,4 +349,39 @@ namespace BlackHole.DataProviders
         }
         #endregion
     }
+
+    internal class EntityColumnMap
+    {
+        public int PkIndex { get; set; }
+        public Dictionary<PropertyInfo, int> Columns { get; set; } = new();
+    }
+
+    internal class IncludeInfo
+    {
+        public Type EntityType { get; set; } = null!;
+        public string? ColumnPrefix { get; set; }           // e.g. "Customer_"
+        public bool IsCollection { get; set; }
+        public PropertyInfo? NavigationProperty { get; set; }
+
+        // ThenInclude support
+        public Type? ParentType { get; set; }               // null = root, otherwise the included parent entity
+        public string? ParentPkPrefix { get; set; }         // prefix to find parent's PK in the row, e.g. "Customer_"
+
+        public void SetReference(object parent, object? related)
+        {
+            var structValue = NavigationProperty!.GetValue(parent);           // boxed copy
+            var valueProp = structValue!.GetType().GetProperty("Value");
+            valueProp!.SetValue(structValue, related);
+            NavigationProperty.SetValue(parent, structValue);                 // set back
+        }
+
+        // For BHIncludeList<T> — call Add, then set the struct back
+        public void AddToCollection(object parent, object related)
+        {
+            var structValue = NavigationProperty!.GetValue(parent);           // boxed copy
+            var addMethod = structValue!.GetType().GetMethod("Add");
+            addMethod!.Invoke(structValue, new[] { related });
+            NavigationProperty.SetValue(parent, structValue);                 // set back
+        }
+    }   
 }

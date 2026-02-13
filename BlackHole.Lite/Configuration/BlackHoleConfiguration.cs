@@ -14,7 +14,7 @@ namespace BlackHole.Configuration
         /// Creates or Updates the Database Automatically into the specified Path
         /// and also registers all the Entities of the Project to the BHDataProvider.
         /// </summary>
-        /// <param name="dataPath">The Path of the Database</param>
+        /// <param name="settings">The Path of the Database</param>
         public static void SuperNova(Action<BlackHoleLiteSettings> settings)
         {
             BlackHoleLiteSettings InsideSettings = new();

@@ -1,4 +1,6 @@
 ﻿using BlackHole.CoreSupport;
+using BlackHole.DataProviders;
+using BlackHole.Entities;
 
 namespace BlackHole.Core
 {
@@ -11,6 +13,7 @@ namespace BlackHole.Core
         internal string PropertyNames { get; }
         internal string PropertyParams { get; }
         internal string UpdateParams { get; }
+        internal List<IncludeInfo> Includes { get; private set; } = new();
 
         internal BHEntityContext(Type entityType, bool useActivator, string tableName, List<string> tableColumns, string propNames, string propParams, string updateParams)
         {
@@ -38,6 +41,39 @@ namespace BlackHole.Core
         internal string PropertyParams { get; }
         internal string UpdateParams { get; }
         internal string ConnectionString { get; }
+
+        internal List<IncludeInfo> Includes { get; private set; } = new();
+
+        internal BHEntityContext(bool useActivator, string tableName, List<string> tableColumns, string propNames, string propParams, string updateParams, string databaseName)
+        {
+
+            WithActivator = useActivator;
+            ThisTable = tableName;
+            Columns = tableColumns;
+            PropertyNames = propNames;
+            PropertyParams = propParams;
+            UpdateParams = updateParams;
+            ConnectionString = databaseName.BuildConnectionString();
+        }
+    }
+
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="G"></typeparam>
+    public class BHEntityContext<T, G> where T : BlackHoleEntity  where G : BlackHoleEntity
+    {
+        internal bool WithActivator { get; }
+        internal string ThisTable { get; }
+        internal List<string> Columns { get; }
+        internal string PropertyNames { get; }
+        internal string PropertyParams { get; }
+        internal string UpdateParams { get; }
+        internal string ConnectionString { get; }
+
+        internal List<IncludeInfo> Includes { get; private set; } = new();
 
         internal BHEntityContext(bool useActivator, string tableName, List<string> tableColumns, string propNames, string propParams, string updateParams, string databaseName)
         {
