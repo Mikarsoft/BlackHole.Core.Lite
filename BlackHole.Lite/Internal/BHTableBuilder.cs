@@ -4,7 +4,9 @@ using BlackHole.Entities;
 using BlackHole.Statics;
 using System.Data;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace BlackHole.Internal
 {
@@ -497,7 +499,9 @@ namespace BlackHole.Internal
             }
 
             uniqueColumns = uniqueColumns.Remove(0, 1);
-            string uniqueConstraint = $"{constraintBegin} uc_{TableName}_{groupId} UNIQUE ({uniqueColumns})";
+            string key = $"{TableName}_{groupId}";
+            string hash = HashKey(key);
+            string uniqueConstraint = $"{constraintBegin} uc_{hash} UNIQUE ({uniqueColumns})";
             return uniqueConstraint;
         }
 
@@ -522,9 +526,21 @@ namespace BlackHole.Internal
 
             fromColumn = fromColumn.Remove(0, 1);
             toColumn = toColumn.Remove(0, 1);
+            string key = $"{TableName}_{fromColumn}_{ReferencedTable}";
+            string hash = HashKey(key);
             string onDeleteRule = isNullable ? "on delete set null" : "on delete cascade";
-            string constraintCommand = $"{constraintBegin} fk_{TableName}_{ReferencedTable} FOREIGN KEY ({fromColumn}) REFERENCES {ReferencedTable}({toColumn}) {onDeleteRule}";
+            string constraintCommand = $"{constraintBegin} fk_{hash} FOREIGN KEY ({fromColumn}) REFERENCES {ReferencedTable}({toColumn}) {onDeleteRule}";
             return constraintCommand;
+        }
+
+        private string HashKey(string key)
+        {
+            using (var md5 = MD5.Create())
+            {
+                byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(key));
+
+                return string.Join("",hash.Select(b => $"{b:X2}"));
+            }
         }
 
         string CheckLitePreviousColumnState(string defaultVal, string nullPhase, string TableName, string ColumnName)
