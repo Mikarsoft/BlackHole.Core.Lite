@@ -20,5 +20,7 @@ namespace BlackHole.CoreSupport
         internal string Query { get; set; } = string.Empty;
 
         internal string Joins { get; set; } = string.Empty;
+
+        internal string RootLetter { get; set; } = string.Empty;
     }
 }

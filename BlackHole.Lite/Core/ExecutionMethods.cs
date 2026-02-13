@@ -87,16 +87,18 @@ namespace BlackHole.Core
         public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id) 
             where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
             BHParameters Params = new();
             Params.Add("Id", Id);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id and Inactive = 0", Params.Parameters, context.ConnectionString);
+                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
+                    Params.Parameters, context.ConnectionString);
             }
-            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id", Params.Parameters, context.ConnectionString);
+            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
+                Params.Parameters, context.ConnectionString);
         }
 
         /// <summary>
@@ -111,16 +113,18 @@ namespace BlackHole.Core
         public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id, BHTransaction bhTransaction) 
             where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
             BHParameters Params = new();
             Params.Add("Id", Id);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id and Inactive = 0", Params.Parameters, bhTransaction.transaction);
+                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
+                    Params.Parameters, bhTransaction.transaction);
             }
-            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Id = @Id", Params.Parameters, bhTransaction.transaction);
+            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
+                Params.Parameters, bhTransaction.transaction);
         }
 
         /// <summary>
@@ -132,87 +136,101 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context) where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0", null, context.ConnectionString);
+                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
+                    null, context.ConnectionString);
             }
-            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable}", null, context.ConnectionString);
+            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
+                null, context.ConnectionString);
         }
 
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context, BHTransaction bhTransaction)
             where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0", null, bhTransaction.transaction);
+                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
+                    null, bhTransaction.transaction);
             }
-            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable}", null, bhTransaction.transaction);
+            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
+                null, bhTransaction.transaction);
         }
 
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
             where T : BlackHoleEntity  where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
-            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
+
             string limit = 1.GetLimiter();
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, context.ConnectionString);
+                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
+                    sql.Parameters, context.ConnectionString);
             }
-            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, context.ConnectionString);
+            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
+                sql.Parameters, context.ConnectionString);
         }
 
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
             where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
-            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
             string limit = 1.GetLimiter();
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns} {limit}", sql.Parameters, bhTransaction.transaction);
+                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
+                    sql.Parameters, bhTransaction.transaction);
             }
-            return _dataProvider.QueryFirst<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns} {limit}", sql.Parameters, bhTransaction.transaction);
+            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
+                sql.Parameters, bhTransaction.transaction);
         }
 
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
             where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
-            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, context.ConnectionString);
+                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
+                    sql.Parameters, context.ConnectionString);
             }
-            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns}", sql.Parameters, context.ConnectionString);
+
+            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
+                sql.Parameters, context.ConnectionString);
         }
 
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
             where T : BlackHoleEntity where G : BlackHoleEntity
         {
-            var includeCommand = context.Includes.BuildIncludeSql<T>();
+            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
-            ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
+            ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where Inactive = 0 and {sql.Columns}", sql.Parameters, bhTransaction.transaction);
+                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
+                    sql.Parameters, bhTransaction.transaction);
             }
-            return _dataProvider.Query<T>($"select Id,{context.PropertyNames} from {context.ThisTable} where {sql.Columns}", sql.Parameters, bhTransaction.transaction);
+            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
+                sql.Parameters, bhTransaction.transaction);
         }
 
         /// <summary>

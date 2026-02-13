@@ -7,7 +7,8 @@ namespace BlackHole.CoreSupport
 {
     internal static class ExpressionTranslatorToSql
     {
-        internal static IncludeQueryCommand BuildIncludeSql<T>(this List<IncludeInfo> includes)
+        internal static IncludeQueryCommand BuildIncludeSql<T>(this List<IncludeInfo> includes,
+            string rootPkColumn, List<string> rootColumns)
         {
             string rootTable = typeof(T).Name;
 
