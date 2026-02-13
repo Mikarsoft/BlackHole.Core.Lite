@@ -94,11 +94,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
-                    Params.Parameters, context.ConnectionString);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
+                    Params.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
-                Params.Parameters, context.ConnectionString);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
+                Params.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
         }
 
         /// <summary>
@@ -120,11 +120,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
-                    Params.Parameters, bhTransaction.transaction);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
+                    Params.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
-                Params.Parameters, bhTransaction.transaction);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
+                Params.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
         }
 
         /// <summary>
@@ -140,11 +140,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
-                    null, context.ConnectionString);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
+                    null, context.ConnectionString, context.Includes);
             }
-            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
-                null, context.ConnectionString);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
+                null, context.ConnectionString, context.Includes);
         }
 
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context, BHTransaction bhTransaction)
@@ -154,11 +154,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
-                    null, bhTransaction.transaction);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
+                    null, bhTransaction.transaction, context.Includes);
             }
-            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
-                null, bhTransaction.transaction);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
+                null, bhTransaction.transaction, context.Includes);
         }
 
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
@@ -173,11 +173,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
-                    sql.Parameters, context.ConnectionString);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
+                    sql.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
-                sql.Parameters, context.ConnectionString);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
+                sql.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
         }
 
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
@@ -191,11 +191,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
-                    sql.Parameters, bhTransaction.transaction);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
+                    sql.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryFirst<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
-                sql.Parameters, bhTransaction.transaction);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
+                sql.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
         }
 
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
@@ -208,12 +208,12 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
-                    sql.Parameters, context.ConnectionString);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
+                    sql.Parameters, context.ConnectionString, context.Includes);
             }
 
-            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
-                sql.Parameters, context.ConnectionString);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
+                sql.Parameters, context.ConnectionString, context.Includes);
         }
 
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
@@ -226,11 +226,11 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
-                    sql.Parameters, bhTransaction.transaction);
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
+                    sql.Parameters, bhTransaction.transaction, context.Includes);
             }
-            return _dataProvider.Query<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
-                sql.Parameters, bhTransaction.transaction);
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
+                sql.Parameters, bhTransaction.transaction, context.Includes);
         }
 
         /// <summary>

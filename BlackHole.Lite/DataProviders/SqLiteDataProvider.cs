@@ -188,13 +188,8 @@ namespace BlackHole.DataProviders
                     {
                         while (DataReader.Read())
                         {
-                            T? line = MapObject<T>(DataReader);
-
-                            if (line != null)
-                            {
-                                result = line;
-                                break;
-                            }
+                            result = MapObject<T>(DataReader);
+                            break;
                         }
                     }
                     connection.Close();
@@ -257,13 +252,8 @@ namespace BlackHole.DataProviders
                 {
                     while (DataReader.Read())
                     {
-                        T? line = MapObject<T>(DataReader);
-
-                        if (line != null)
-                        {
-                            result = line;
-                            break;
-                        }
+                        result = MapObject<T>(DataReader);
+                        break;
                     }
                 }
                 return result;
