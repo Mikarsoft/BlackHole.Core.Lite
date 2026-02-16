@@ -1,14 +1,12 @@
 ﻿
 
-using BlackHole.Entities;
-
 namespace BlackHole.Lite.Entities
 {
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public struct BHIncludeList<T> where T : BlackHoleEntity
+    public struct BHIncludeList<T> where T : BHEntity
     {
         public List<T> Items { get; set; }
 
