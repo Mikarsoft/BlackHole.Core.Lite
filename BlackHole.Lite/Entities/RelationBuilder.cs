@@ -2,17 +2,33 @@
 
 namespace BlackHole.Lite.Entities
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class RelationBuilder<T> where T : BHEntity
     {
         internal List<BHEntityIndex> Indices = new();
         internal List<IBHRelation> Relations = new();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="property"></param>
+        /// <returns></returns>
         public BHEntityIndex HasIndex<TKey>(Expression<Func<T, TKey>> property)
         {
             Indices.Add(new BHEntityIndex(property.GetPropertyNames()));
             return Indices[^1];
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="include"></param>
+        /// <returns></returns>
         public BHIncludeKey<T, G> HasOne<G>(Expression<Func<T, BHIncludeItem<G>>> include) where G : BHEntity
         {
             var key = new BHIncludeKey<T, G>(include.GetPropertyName(), false);
@@ -20,6 +36,12 @@ namespace BlackHole.Lite.Entities
             return key;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="include"></param>
+        /// <returns></returns>
         public BHIncludeKey<T, G> HasMany<G>(Expression<Func<T, BHIncludeList<G>>> include) where G : BHEntity
         {
             var key = new BHIncludeKey<T, G>(include.GetPropertyName(), true);
@@ -29,6 +51,11 @@ namespace BlackHole.Lite.Entities
 
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="G"></typeparam>
     public class BHIncludeKey<T, G> : IBHRelation where T : BHEntity where G : BHEntity
     {
         internal string PropertyName { get; set; }
@@ -55,14 +82,17 @@ namespace BlackHole.Lite.Entities
 
         string IBHRelation.ForeignKeyPropertyName => ForeignKey.PropertyName;
 
-        bool IBHRelation.ForeignKeyOnMain => ForeignKey.KeyOnMain;
-
         BHBackwardIncludeInfo? IBHRelation.BackwardInclude => _backwardsInclude;
 
         private BHDeleteCase _onDelete { get; set; } = new();
 
         private BHBackwardIncludeInfo? _backwardsInclude { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="include"></param>
+        /// <returns></returns>
         public BHForeignKey<T, G> WithOne(Expression<Func<G, BHIncludeItem<T>>>? include = null)
         {
             if (include != null)
@@ -74,6 +104,11 @@ namespace BlackHole.Lite.Entities
             return ForeignKey;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="include"></param>
+        /// <returns></returns>
         public BHForeignKey<T, G> WithMany(Expression<Func<G, BHIncludeList<T>>>? include = null)
         {
             if (include != null)
@@ -86,18 +121,26 @@ namespace BlackHole.Lite.Entities
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public class BHBackwardIncludeInfo
     {
-        public string PropertyName { get; }
-        public bool IsList { get; }
+        internal string PropertyName { get; }
+        internal bool IsList { get; }
 
-        public BHBackwardIncludeInfo(string propertyName, bool isList)
+        internal BHBackwardIncludeInfo(string propertyName, bool isList)
         {
             PropertyName = propertyName;
             IsList = isList;
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="G"></typeparam>
     public class BHForeignKey<T, G>
     {
         internal BHForeignKey()
@@ -105,45 +148,76 @@ namespace BlackHole.Lite.Entities
 
         }
 
-        internal bool KeyOnMain { get; set; }
-
         internal string PropertyName { get; set; } = null!;
 
         internal BHDeleteCase OnDelete { get; set; } = new();
 
-        public BHDeleteCase HasForeignKeyTo<GKey>(Expression<Func<G, GKey>> foreignKey)
-        {
-            KeyOnMain = false;
-            PropertyName = foreignKey.GetPropertyName();
-            return OnDelete;
-        }
 
-        public BHDeleteCase HasForeignKeyFrom<TKey>(Expression<Func<T, TKey>> foreignKey)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="foreignKey"></param>
+        /// <returns></returns>
+        public BHDeleteCase HasForeignKey<TKey>(Expression<Func<T, TKey>> foreignKey) where TKey : struct
         {
-            KeyOnMain = true;
+            bool isNullable = foreignKey.Body is UnaryExpression;
+            OnDelete.IsNullable = isNullable;
             PropertyName = foreignKey.GetPropertyName();
             return OnDelete;
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public class BHDeleteCase
     {
         internal BHDeleteCase() { }
 
         internal OnDeleteBehavior DeleteAction {  get; set; }
+
+        internal bool IsNullable { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="onDelete"></param>
         public void OnDelete(OnDeleteBehavior onDelete)
         {
+            if (!IsNullable && onDelete == OnDeleteBehavior.SetNull)
+            {
+                throw new Exception("On Delete Behaviour Can't be 'SetNull' on a Non Nullable Column");
+            }
+
             DeleteAction = onDelete;
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum OnDeleteBehavior
     {
+        /// <summary>
+        /// 
+        /// </summary>
         Restrict,
+
+        /// <summary>
+        /// 
+        /// </summary>
         SetNull,
+
+        /// <summary>
+        /// 
+        /// </summary>
         Cascade
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public class BHEntityIndex
     {
         internal bool IsIndexUnique { get; private set; }
@@ -154,6 +228,11 @@ namespace BlackHole.Lite.Entities
         {
             IndexColumns = columns.ToArray();
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="isUnique"></param>
 
         public void IsUnique(bool isUnique = true)
         {
@@ -169,7 +248,6 @@ namespace BlackHole.Lite.Entities
         bool IsList { get; }
         BHDeleteCase OnDelete { get; }
         string ForeignKeyPropertyName { get; }
-        bool ForeignKeyOnMain { get; }
         BHBackwardIncludeInfo? BackwardInclude { get; }
     }
 

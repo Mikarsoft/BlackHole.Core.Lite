@@ -1,4 +1,5 @@
-﻿
+﻿using BlackHole.Lite.Entities;
+
 namespace BlackHole.Internal
 {
     internal class FKInfo
@@ -7,5 +8,6 @@ namespace BlackHole.Internal
         internal string ReferencedTable { get; set; } = string.Empty;
         internal string ReferencedColumn { get; set; } = string.Empty;
         internal bool IsNullable { get; set; }
+        internal OnDeleteBehavior OnDelete {  get; set; }
     }
 }

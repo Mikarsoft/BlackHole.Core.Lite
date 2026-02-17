@@ -9,6 +9,8 @@ namespace BlackHole.Lite.Entities
 
     public abstract class BHEntity
     {
-        public  abstract int Id { get; set; }
+        public int Id { get; set; }
+
+        public int Inactive { get; internal set; }
     }
 }

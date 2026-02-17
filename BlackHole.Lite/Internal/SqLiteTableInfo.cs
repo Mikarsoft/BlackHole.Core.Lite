@@ -30,4 +30,42 @@
         /// </summary>
         public int pk { get; set; }
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class SQLiteIndexInfo
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public int seq { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool unique { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string origin { get; set; } = string.Empty; // "c" = CREATE INDEX, "u" = UNiQUE CONSTRAINT, "pk" = primary key
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool partial { get; set; }
+    }
+
+    public class SQLiteIndexColumnInfo
+    {
+        public int seqno { get; set; }
+        public int cid { get; set; }
+        public string name { get; set; } = string.Empty;
+    }
 }

@@ -28,7 +28,7 @@ namespace BlackHole.Entities
         /// with other columns.
         /// </summary>
         /// <param name="groupId">The unique columns group Id</param>
-        public Unique(int groupId)
+        public Unique(byte groupId)
         {
             if (groupId < 1)
             {

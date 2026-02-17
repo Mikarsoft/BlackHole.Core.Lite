@@ -1,12 +1,17 @@
 ﻿using BlackHole.CoreSupport;
 using BlackHole.DataProviders;
 using BlackHole.Entities;
+using BlackHole.Lite.Entities;
+using BlackHole.Lite.Internal;
 using BlackHole.Statics;
+using System;
 using System.Data;
+using System.Data.Common;
+using System.Data.SqlTypes;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
+using System.Text.RegularExpressions;
 
 namespace BlackHole.Internal
 {
@@ -132,6 +137,9 @@ namespace BlackHole.Internal
                 NewColumnNames.Add(Property.Name);
             }
 
+            List<SQLiteIndexInfo> IndicesInfo = connection.Query<SQLiteIndexInfo>($"PRAGMA index_list({TableType.Name});", null);
+
+
             foreach (SQLiteTableInfo column in connection.Query<SQLiteTableInfo>($"PRAGMA table_info({TableType.Name}); ", null))
             {
                 ColumnNames.Add(column.name);
@@ -149,10 +157,64 @@ namespace BlackHole.Internal
         {
             string Tablename = TableType.Name;
             string OldTablename = $"{TableType.Name}_Old";
-            List<FKInfo> FkOptions = new();
+
             Type FkType = typeof(ForeignKey);
-            List<UniqueInfo> UniqueOptions = new();
             Type UQType = typeof(Unique);
+
+            List<UniqueInfo> UniqueOptions = new();
+            List<NonUniqueIndex> Indices = new();
+            List<FKInfo> FkOptions = new();
+
+            List<NonUniqueIndex> tempIndices = new();
+            List<UniqueInfo> tempUniqueOptions = new();
+            List<FKInfo> tempFkOptions = new();
+
+            var relationType = GetRelationEntityType(TableType);
+
+            if (relationType != null)
+            {
+                var builderType = typeof(RelationBuilder<>).MakeGenericType(relationType);
+                var builder = Activator.CreateInstance(builderType);
+
+                var instance = Activator.CreateInstance(TableType);
+                var configureMethod = TableType.GetMethod("Congifure");
+                configureMethod!.Invoke(instance, new[] { builder });
+
+                var flags = BindingFlags.NonPublic | BindingFlags.Instance;
+                var indices = (List<BHEntityIndex>)builderType.GetField("Indices", flags)!.GetValue(builder)!;
+                var relations = (List<IBHRelation>)builderType.GetField("Relations", flags)!.GetValue(builder)!;
+
+                ushort uniqueId = 256;
+
+                foreach (var index in indices)
+                {
+                    if (index.IsIndexUnique)
+                    {
+                        tempIndices.Add(new NonUniqueIndex(index.IndexColumns, uniqueId));
+                    }
+                    else
+                    {
+                        foreach (var prop in index.IndexColumns)
+                        {
+                            tempUniqueOptions.Add(AddUniqueConstraint(prop, uniqueId));
+                        }
+                    }
+
+                    uniqueId++;
+                }
+
+                foreach (var relation in relations)
+                {
+                    tempFkOptions.Add(new FKInfo()
+                    {
+                        ReferencedColumn = "Id",
+                        ReferencedTable = relation.IncludedType.Name,
+                        OnDelete = relation.OnDelete.DeleteAction,
+                        IsNullable = relation.OnDelete.IsNullable,
+                        PropertyName = relation.ForeignKeyPropertyName
+                    });
+                }
+            }
 
             List<string> ColumnNames = new();
             List<string> NewColumnNames = new()
@@ -175,10 +237,12 @@ namespace BlackHole.Internal
             }
 
             List<string> ColumnsToDrop = ColumnNames.Except(NewColumnNames).ToList();
+
             if (ColumnsToDrop.Any())
             {
                 throw ProtectDbAndThrow($"Error at Table '{TableType.Name}' on Dropping Columns. You CAN ONLY Drop Columns of a Table in Developer Mode, or by using the CLI 'update' command with the '--force' argument => 'bhl update --force'");
             }
+
             List<string> ColumnsToAdd = NewColumnNames.Except(ColumnNames).ToList();
             bool missingInactiveColumn = ColumnsToAdd.Contains("Inactive");
             List<string> CommonColumns = ColumnNames.Intersect(NewColumnNames).ToList();
@@ -327,6 +391,18 @@ namespace BlackHole.Internal
             }
         }
 
+        Type? GetRelationEntityType(Type entityType)
+        {
+            var type = entityType.BaseType;
+            while (type != null)
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(BHEntity<>))
+                    return type.GenericTypeArguments[0]; // the T in BHEntity<T>
+                type = type.BaseType;
+            }
+            return null;
+        }
+
         string GetSqlColumn(object[] attributes, Type PropertyType, string PropName, string TableName)
         {
             bool mandatoryNull = false;
@@ -452,7 +528,8 @@ namespace BlackHole.Internal
                 PropertyName = propName,
                 ReferencedTable = $"{tName}",
                 ReferencedColumn = $"{tColumn}",
-                IsNullable = nullability
+                IsNullable = nullability,
+                OnDelete = nullability ? OnDeleteBehavior.SetNull : OnDeleteBehavior.Cascade
             };
         }
 
@@ -501,7 +578,12 @@ namespace BlackHole.Internal
             uniqueColumns = uniqueColumns.Remove(0, 1);
             string key = $"{TableName}_{groupId}";
             string hash = HashKey(key);
-            string uniqueConstraint = $"{constraintBegin} uc_{hash} UNIQUE ({uniqueColumns})";
+            string uniqueConstraint = $"{constraintBegin} uc_{groupId}_{hash} UNIQUE ({uniqueColumns})";
+
+            //var unique = index.IsIndexUnique ? "UNIQUE " : "";
+            //var columns = string.Join(", ", index.IndexColumns);
+            //var indexName = $"IX_{tableName}_{string.Join("_", index.IndexColumns)}";
+            //var sql = $"CREATE {uniqueAttribute}INDEX IF NOT EXISTS uc_{hash} ON {tableName} ({columns});";
             return uniqueConstraint;
         }
 
@@ -581,7 +663,7 @@ namespace BlackHole.Internal
         string GetDatatypeCommand(Type PropertyType, object[] attributes, string Propertyname, string TableName)
         {
             string propTypeName = PropertyType.Name;
-            string dataCommand = "";
+            string dataCommand;
 
             if (propTypeName.Contains("Nullable"))
             {
@@ -636,6 +718,9 @@ namespace BlackHole.Internal
                 case "DateTime":
                     dataCommand = $"{Propertyname} {SqlDatatypes[10]} ";
                     break;
+                case "DateTimeOffset":
+                    dataCommand = $"{Propertyname} {SqlDatatypes[12]} "; // e.g. "DATETIMEOFFSET" for SQL Server, "TEXT" for SQLite
+                    break;
                 case "Byte[]":
                     dataCommand = $"{Propertyname} {SqlDatatypes[11]} ";
                     break;
@@ -660,6 +745,7 @@ namespace BlackHole.Internal
                 "Guid" => $"'{Guid.Empty}'",
                 "Boolean" => "0",
                 "DateTime" => $"'{new DateTime(1970, 1, 1).ToString(DatabaseStatics.DbDateFormat)}'",
+                "DateTimeOffset" => $"'{new DateTimeOffset(1970, 1, 1, 0, 0, 0, new(0,0,0)).ToString(DatabaseStatics.DbDateFormat)}'",
                 "Byte[]" => $"'{new byte[0]}'",
                 _ => throw ProtectDbAndThrow($"Unsupported property type '{PropertyType.FullName}' at Property '{PropName}' of Entity '{TableName}'"),
             };
