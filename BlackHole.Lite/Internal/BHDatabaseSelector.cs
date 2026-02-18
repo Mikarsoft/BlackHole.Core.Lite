@@ -12,7 +12,7 @@ namespace BlackHole.Internal
 
         internal string GetPrimaryKeyCommand()
         {
-            return "Id INTEGER PRIMARY KEY AUTOINCREMENT ,";
+            return "Id INTEGER PRIMARY KEY AUTOINCREMENT, ";
         }
 
         internal string GetDatabasePath(string databaseName)
@@ -27,7 +27,7 @@ namespace BlackHole.Internal
 
         internal string[] SqlDatatypesTranslation()
         {
-            return new[] { "varchar", "char", "int2", "integer", "bigint", "decimal", "float", "numeric", "varchar(36)", "boolean", "datetime", "blob", "text" };
+            return new[] { "varchar", "char", "int2", "integer", "bigint", "decimal", "float", "numeric", "varchar(36)", "boolean", "datetime", "blob", "text(25)" };
         }
     }
 }

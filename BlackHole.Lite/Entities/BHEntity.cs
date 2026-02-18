@@ -1,5 +1,5 @@
 ﻿
-namespace BlackHole.Lite.Entities
+namespace BlackHole.Entities
 {
     public abstract class BHEntity<T> : BHEntity where T : BHEntity<T>
     {

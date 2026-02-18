@@ -36,7 +36,7 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <returns>Entity Context</returns>
-        public static BHEntityContext<T> For<T>() where T : BlackHoleEntity
+        public static BHEntityContext<T> For<T>() where T : BHEntity
         {
             return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DefaultDbName);
         }
@@ -46,7 +46,7 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <returns>Entity Context</returns>
-        public static BHEntityContext<T> For<T>(string databaseName) where T : BlackHoleEntity
+        public static BHEntityContext<T> For<T>(string databaseName) where T : BHEntity
         {
             return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(databaseName);
         }
@@ -103,19 +103,19 @@ namespace BlackHole.Core
             return new();
         }
 
-        internal static BHEntityContext<T> MapEntity<T>(this BHEntityContext context, string connectionString) where T : BlackHoleEntity
+        internal static BHEntityContext<T> MapEntity<T>(this BHEntityContext context, string connectionString) where T : BHEntity
         {
             return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
         }
 
         internal static BHEntityContext<T, G> MapEntity<T, G>(this BHEntityContext<T> context, string connectionString)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
         }
 
         internal static BHEntityContext<T, H> MapEntity<T, G, H>(this BHEntityContext<T, G> context, string connectionString)
-            where T : BlackHoleEntity where G : BlackHoleEntity where H : BlackHoleEntity
+            where T : BHEntity where G : BHEntity where H : BHEntity
         {
             return new (context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
         }
@@ -140,7 +140,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> InnerJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -157,7 +157,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> OuterJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -174,7 +174,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> LeftJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -191,7 +191,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> RightJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -209,7 +209,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> InnerJoin<T, TOther>(string databaseName)
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -226,7 +226,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> OuterJoin<T, TOther>(string databaseName)
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -243,7 +243,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> LeftJoin<T, TOther>(string databaseName)
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -260,7 +260,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public static PreJoinsData<T, TOther> RightJoin<T, TOther>(string databaseName)
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {

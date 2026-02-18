@@ -1,5 +1,4 @@
-﻿
-using BlackHole.Entities;
+﻿using BlackHole.Entities;
 
 namespace BlackHole.Core
 {
@@ -17,7 +16,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this Guid property, Func<TOther, Guid> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this Guid property, Func<TOther, Guid> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -29,20 +28,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this string property, Func<TOther, string> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this int property, Func<TOther, int> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this string property, Func<TOther, string> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -55,7 +41,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this decimal property, Func<TOther, decimal> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this int property, Func<TOther, int> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -68,7 +54,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this short property, Func<TOther, short> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this decimal property, Func<TOther, decimal> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -81,7 +67,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this long property, Func<TOther, long> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this short property, Func<TOther, short> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -94,7 +80,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this double property, Func<TOther, double> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this long property, Func<TOther, long> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -107,7 +93,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this float property, Func<TOther, float> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this double property, Func<TOther, double> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -120,99 +106,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-
-        public static bool SqlEqualTo<TOther>(this DateTime property, Func<TOther, DateTime> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlEqualTo<TOther>(this byte[] property, Func<TOther, byte[]> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlGreaterThan<TOther>(this int property, Func<TOther, int> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlGreaterThan<TOther>(this decimal property, Func<TOther, decimal> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlGreaterThan<TOther>(this short property, Func<TOther, short> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlGreaterThan<TOther>(this long property, Func<TOther, long> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlGreaterThan<TOther>(this double property, Func<TOther, double> otherTypesProperty, int Id) where TOther : BlackHoleEntity
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Compare a column of the current table to a column of another table in
-        /// the 'where' statement of the Data provider.
-        /// </summary>
-        /// <typeparam name="TOther">Other Table</typeparam>
-        /// <param name="property">Current Column</param>
-        /// <param name="otherTypesProperty">Other Table's Column</param>
-        /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlGreaterThan<TOther>(this float property, Func<TOther, float> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this float property, Func<TOther, float> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -226,7 +120,7 @@ namespace BlackHole.Core
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
 
-        public static bool SqlGreaterThan<TOther>(this DateTime property, Func<TOther, DateTime> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this DateTime property, Func<TOther, DateTime> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -239,7 +133,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlLessThan<TOther>(this int property, Func<TOther, int> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlEqualTo<TOther>(this byte[] property, Func<TOther, byte[]> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -252,7 +146,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlLessThan<TOther>(this decimal property, Func<TOther, decimal> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlGreaterThan<TOther>(this int property, Func<TOther, int> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -265,7 +159,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlLessThan<TOther>(this short property, Func<TOther, short> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlGreaterThan<TOther>(this decimal property, Func<TOther, decimal> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -278,7 +172,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlLessThan<TOther>(this long property, Func<TOther, long> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlGreaterThan<TOther>(this short property, Func<TOther, short> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -291,7 +185,7 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlLessThan<TOther>(this double property, Func<TOther, double> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlGreaterThan<TOther>(this long property, Func<TOther, long> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -304,7 +198,20 @@ namespace BlackHole.Core
         /// <param name="property">Current Column</param>
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
-        public static bool SqlLessThan<TOther>(this float property, Func<TOther, float> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlGreaterThan<TOther>(this double property, Func<TOther, double> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlGreaterThan<TOther>(this float property, Func<TOther, float> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }
@@ -318,7 +225,99 @@ namespace BlackHole.Core
         /// <param name="otherTypesProperty">Other Table's Column</param>
         /// <param name="Id">Id of the other Table's Line</param>
 
-        public static bool SqlLessThan<TOther>(this DateTime property, Func<TOther, DateTime> otherTypesProperty, int Id) where TOther : BlackHoleEntity
+        public static bool SqlGreaterThan<TOther>(this DateTime property, Func<TOther, DateTime> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlLessThan<TOther>(this int property, Func<TOther, int> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlLessThan<TOther>(this decimal property, Func<TOther, decimal> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlLessThan<TOther>(this short property, Func<TOther, short> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlLessThan<TOther>(this long property, Func<TOther, long> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlLessThan<TOther>(this double property, Func<TOther, double> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+        public static bool SqlLessThan<TOther>(this float property, Func<TOther, float> otherTypesProperty, int Id) where TOther : BHEntity
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Compare a column of the current table to a column of another table in
+        /// the 'where' statement of the Data provider.
+        /// </summary>
+        /// <typeparam name="TOther">Other Table</typeparam>
+        /// <param name="property">Current Column</param>
+        /// <param name="otherTypesProperty">Other Table's Column</param>
+        /// <param name="Id">Id of the other Table's Line</param>
+
+        public static bool SqlLessThan<TOther>(this DateTime property, Func<TOther, DateTime> otherTypesProperty, int Id) where TOther : BHEntity
         {
             return true;
         }

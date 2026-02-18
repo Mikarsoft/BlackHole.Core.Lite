@@ -34,13 +34,13 @@ namespace BlackHole.Internal
 
         internal List<Type> GetAllBHEntities(Assembly ass)
         {
-            return ass.GetTypes().Where(t => t.BaseType == typeof(BlackHoleEntity)).ToList();
+            return ass.GetTypes().Where(t => typeof(BHEntity).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass).ToList();
         }
 
         internal List<Type> GetBHEntitiesInNamespace(Assembly ass, string nameSpaces)
         {
             return ass.GetTypes().Where(t => string.Equals(t.Namespace, nameSpaces, StringComparison.Ordinal) 
-            && t.BaseType == typeof(BlackHoleEntity)).ToList();
+                && typeof(BHEntity).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass).ToList();
         }
     }
 }

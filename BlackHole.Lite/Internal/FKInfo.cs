@@ -1,4 +1,5 @@
-﻿using BlackHole.Lite.Entities;
+﻿
+using BlackHole.Entities;
 
 namespace BlackHole.Internal
 {

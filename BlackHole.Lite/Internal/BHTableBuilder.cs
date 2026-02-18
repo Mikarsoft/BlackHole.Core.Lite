@@ -1,17 +1,11 @@
 ﻿using BlackHole.CoreSupport;
 using BlackHole.DataProviders;
 using BlackHole.Entities;
-using BlackHole.Lite.Entities;
-using BlackHole.Lite.Internal;
 using BlackHole.Statics;
-using System;
 using System.Data;
-using System.Data.Common;
-using System.Data.SqlTypes;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace BlackHole.Internal
 {
@@ -28,6 +22,8 @@ namespace BlackHole.Internal
         private List<string> AfterMath { get; set; } = new();
         private EntityContextBuilder entityRegistrator { get; } = new();
         private string CurrentConnectionString { get; set; } 
+
+        public bool IsDeveloperMode { get; set; }
 
         internal BHTableBuilder()
         {
@@ -47,9 +43,9 @@ namespace BlackHole.Internal
         internal void BuildMultipleTables(List<Type> TableTypes)
         {
             DatabaseStatics.InitializeData = true;
-            bool[] Built = new bool[TableTypes.Count];
+            TableCompleteInfo[] Built = new TableCompleteInfo[TableTypes.Count];
 
-            DbConstraints = dbInfoReader.GetDatabaseParsingInfo();
+            //DbConstraints = dbInfoReader.GetDatabaseParsingInfo();
 
             for (int i = 0; i < Built.Length; i++)
             {
@@ -59,14 +55,7 @@ namespace BlackHole.Internal
 
             for (int j = 0; j < Built.Length; j++)
             {
-                if (Built[j])
-                {
-                    ForeignKeyLiteAssignment(TableTypes[j], true);
-                }
-                else
-                {
-                    UpdateLiteTableSchema(TableTypes[j]);
-                }
+                ForeignKeyLiteAssignment(Built[j]);
             }
 
             if (!ExecuteTableCreation())
@@ -82,41 +71,36 @@ namespace BlackHole.Internal
             DbConstraints.Clear();
         }
 
-        bool CreateTable(Type TableType)
+        TableCompleteInfo CreateTable(Type TableType)
         {
+            TableInfoExtractor extractor = new TableInfoExtractor(TableType);
+            TableCompleteInfo entityInfo = extractor.ExtractData();
+
             if (!CheckTable(TableType.Name))
             {
                 PropertyInfo[] Properties = TableType.GetProperties();
                 StringBuilder tableCreator = new();
                 tableCreator.Append($"CREATE TABLE {TableType.Name} (");
 
-                tableCreator.Append(GetDatatypeCommand(typeof(int), Array.Empty<object>(), "Inactive", TableType.Name));
-                tableCreator.Append(" NULL, ");
-
-                foreach (PropertyInfo Property in Properties)
+                foreach (var column in entityInfo.Columns.OrderByDescending(c => c.IsPrimaryKey))
                 {
-                    object[] attributes = Property.GetCustomAttributes(true);
-
-                    if (Property.Name != "Id")
+                    if (column.IsPrimaryKey)
                     {
-                        tableCreator.Append(GetDatatypeCommand(Property.PropertyType, attributes, Property.Name, TableType.Name));
-
-                        tableCreator.Append(GetSqlColumn(attributes, Property.PropertyType, Property.Name, TableType.Name));
+                        tableCreator.Append(_multiDatabaseSelector.GetPrimaryKeyCommand());
                     }
                     else
                     {
-                        tableCreator.Append(_multiDatabaseSelector.GetPrimaryKeyCommand());
+                        tableCreator.Append(GetDatatypeCommand(column, null, TableType.Name, true));
                     }
                 }
 
                 string creationCommand = tableCreator.ToString();
                 creationCommand = $"{creationCommand.Substring(0, creationCommand.Length - 2)})";
                 CreateTablesTransaction.Add(creationCommand);
-                return true;
             }
 
             DatabaseStatics.InitializeData = false;
-            return false;
+            return entityInfo;
         }
 
         bool CheckTable(string TableName)
@@ -124,272 +108,337 @@ namespace BlackHole.Internal
             return connection.ExecuteScalar<string>($@"SELECT name FROM SQLite_master WHERE type='table' AND name='" + TableName + "'", null) == TableName;
         }
 
-        void UpdateLiteTableSchema(Type TableType)
+        //void UpdateLiteTableSchema(Type TableType)
+        //{
+        //    List<string> ColumnNames = new();
+        //    List<string> NewColumnNames = new();
+
+        //    foreach (PropertyInfo Property in TableType.GetProperties())
+        //    {
+        //        NewColumnNames.Add(Property.Name);
+        //    }
+
+        //    foreach (SQLiteTableInfo column in connection.Query<SQLiteTableInfo>($"PRAGMA table_info({TableType.Name}); ", null))
+        //    {
+        //        ColumnNames.Add(column.name);
+        //    }
+
+        //    List<string> CommonList = ColumnNames.Intersect(NewColumnNames).ToList();
+
+        //    if (CommonList.Count != NewColumnNames.Count || CommonList.Count != ColumnNames.Count)
+        //    {
+        //        //ForeignKeyLiteAssignment(TableType, false);
+        //    }
+        //}
+
+        void ForeignKeyLiteAssignment(TableCompleteInfo entityInfo)
         {
-            List<string> ColumnNames = new();
-            List<string> NewColumnNames = new()
-            {
-                "Inactive"
-            };
+            Type TableType = entityInfo.TableType;
 
-            foreach (PropertyInfo Property in TableType.GetProperties())
-            {
-                NewColumnNames.Add(Property.Name);
-            }
+            TableInfoComparator comparator = new TableInfoComparator(TableType);
 
-            List<SQLiteIndexInfo> IndicesInfo = connection.Query<SQLiteIndexInfo>($"PRAGMA index_list({TableType.Name});", null);
+            TableCompleteInfo dbInfo = comparator.GatherExistingInfo(connection);
 
+            var exactColumns = entityInfo.Columns
+                .Where(e => dbInfo.Columns.Any(d =>
+                    d.PropertyName == e.PropertyName &&
+                    d.PropertyType == e.PropertyType &&
+                    d.IsNullable == e.IsNullable))
+                .Count();
 
-            foreach (SQLiteTableInfo column in connection.Query<SQLiteTableInfo>($"PRAGMA table_info({TableType.Name}); ", null))
-            {
-                ColumnNames.Add(column.name);
-            }
+            if (exactColumns == entityInfo.Columns.Count) return;
 
-            List<string> CommonList = ColumnNames.Intersect(NewColumnNames).ToList();
-
-            if (CommonList.Count != NewColumnNames.Count || CommonList.Count != ColumnNames.Count)
-            {
-                ForeignKeyLiteAssignment(TableType, false);
-            }
-        }
-
-        void ForeignKeyLiteAssignment(Type TableType, bool firstTime)
-        {
-            string Tablename = TableType.Name;
             string OldTablename = $"{TableType.Name}_Old";
 
-            Type FkType = typeof(ForeignKey);
-            Type UQType = typeof(Unique);
+            var commonColumns = entityInfo.Columns
+                .Where(e => dbInfo.Columns.Any(d =>
+                    d.PropertyName == e.PropertyName &&
+                    d.PropertyBaseType == e.PropertyBaseType))
+                .ToList();
 
-            List<UniqueInfo> UniqueOptions = new();
-            List<NonUniqueIndex> Indices = new();
-            List<FKInfo> FkOptions = new();
-
-            List<NonUniqueIndex> tempIndices = new();
-            List<UniqueInfo> tempUniqueOptions = new();
-            List<FKInfo> tempFkOptions = new();
-
-            var relationType = GetRelationEntityType(TableType);
-
-            if (relationType != null)
-            {
-                var builderType = typeof(RelationBuilder<>).MakeGenericType(relationType);
-                var builder = Activator.CreateInstance(builderType);
-
-                var instance = Activator.CreateInstance(TableType);
-                var configureMethod = TableType.GetMethod("Congifure");
-                configureMethod!.Invoke(instance, new[] { builder });
-
-                var flags = BindingFlags.NonPublic | BindingFlags.Instance;
-                var indices = (List<BHEntityIndex>)builderType.GetField("Indices", flags)!.GetValue(builder)!;
-                var relations = (List<IBHRelation>)builderType.GetField("Relations", flags)!.GetValue(builder)!;
-
-                ushort uniqueId = 256;
-
-                foreach (var index in indices)
-                {
-                    if (index.IsIndexUnique)
-                    {
-                        tempIndices.Add(new NonUniqueIndex(index.IndexColumns, uniqueId));
-                    }
-                    else
-                    {
-                        foreach (var prop in index.IndexColumns)
-                        {
-                            tempUniqueOptions.Add(AddUniqueConstraint(prop, uniqueId));
-                        }
-                    }
-
-                    uniqueId++;
-                }
-
-                foreach (var relation in relations)
-                {
-                    tempFkOptions.Add(new FKInfo()
-                    {
-                        ReferencedColumn = "Id",
-                        ReferencedTable = relation.IncludedType.Name,
-                        OnDelete = relation.OnDelete.DeleteAction,
-                        IsNullable = relation.OnDelete.IsNullable,
-                        PropertyName = relation.ForeignKeyPropertyName
-                    });
-                }
-            }
-
-            List<string> ColumnNames = new();
-            List<string> NewColumnNames = new()
-            {
-                "Inactive"
-            };
-
-            List<SQLiteForeignKeySchema> SchemaInfo = connection.Query<SQLiteForeignKeySchema>($"PRAGMA foreign_key_list({Tablename});", null);
-            List<SQLiteTableInfo> ColumnsInfo = connection.Query<SQLiteTableInfo>($"PRAGMA table_info({Tablename});", null);
-
-            foreach (SQLiteTableInfo column in ColumnsInfo)
-            {
-                ColumnNames.Add(column.name);
-            }
-
-            PropertyInfo[] Properties = TableType.GetProperties();
-            foreach (PropertyInfo Property in Properties)
-            {
-                NewColumnNames.Add(Property.Name);
-            }
-
-            List<string> ColumnsToDrop = ColumnNames.Except(NewColumnNames).ToList();
-
-            if (ColumnsToDrop.Any())
-            {
-                throw ProtectDbAndThrow($"Error at Table '{TableType.Name}' on Dropping Columns. You CAN ONLY Drop Columns of a Table in Developer Mode, or by using the CLI 'update' command with the '--force' argument => 'bhl update --force'");
-            }
-
-            List<string> ColumnsToAdd = NewColumnNames.Except(ColumnNames).ToList();
-            bool missingInactiveColumn = ColumnsToAdd.Contains("Inactive");
-            List<string> CommonColumns = ColumnNames.Intersect(NewColumnNames).ToList();
+            List<string> oldColumns = dbInfo.Columns.Select(x => x.PropertyName).ToList();
+            List<string> commonColumnNames = commonColumns.Select(x => x.PropertyName).ToList();
+            List<string> columnsToDrop = oldColumns.Except(commonColumnNames).ToList();
 
             StringBuilder alterTable = new();
             StringBuilder foreignKeys = new();
             StringBuilder closingCommand = new();
 
-            alterTable.Append($"ALTER TABLE {Tablename} RENAME TO {OldTablename}; CREATE TABLE {Tablename} (");
-            alterTable.Append(GetDatatypeCommand(typeof(int), Array.Empty<object>(), "Inactive", TableType.Name));
-            alterTable.Append(" NULL, ");
+            alterTable.Append($"ALTER TABLE {TableType.Name} RENAME TO {OldTablename}; CREATE TABLE {TableType.Name} (");
 
-            foreach (string AddColumn in CommonColumns.Where(x => x != "Inactive"))
+            foreach (var column in entityInfo.Columns.OrderByDescending(c => c.IsPrimaryKey))
             {
-                PropertyInfo Property = Properties.First(x => x.Name == AddColumn);
-                object[] attributes = Property.GetCustomAttributes(true);
-
-                if (Property.Name != "Id")
-                {
-                    alterTable.Append(GetDatatypeCommand(Property.PropertyType, attributes, Property.Name, TableType.Name));
-                    SQLiteTableInfo existingCol = ColumnsInfo.First(x => x.name == AddColumn);
-                    alterTable.Append(SQLiteColumn(attributes, firstTime, Property.PropertyType, Property.Name, TableType.Name, existingCol.notnull));
-                }
-                else
+                if (column.IsPrimaryKey)
                 {
                     alterTable.Append(_multiDatabaseSelector.GetPrimaryKeyCommand());
                 }
-
-                if (attributes.Length > 0)
-                {
-                    object? FK_attribute = attributes.FirstOrDefault(x => x.GetType() == FkType);
-                    bool nullability = true;
-                    if (FK_attribute != null)
-                    {
-                        var tName = FkType.GetProperty("TableName")?.GetValue(FK_attribute, null);
-                        var tColumn = FkType.GetProperty("Column")?.GetValue(FK_attribute, null);
-                        if (FkType.GetProperty("Nullability")?.GetValue(FK_attribute, null) is bool isNullable)
-                        {
-                            nullability = isNullable;
-                            FkOptions.Add(AddForeignKey(Property.Name, tName, tColumn, isNullable));
-                        }
-                    }
-                    else
-                    {
-                        object? NN_attribute = attributes.FirstOrDefault(x => x.GetType() == typeof(NotNullable));
-                        if (NN_attribute != null)
-                        {
-                            nullability = false;
-                        }
-                    }
-
-                    object? UQ_attribute = attributes.FirstOrDefault(x => x.GetType() == UQType);
-
-                    if (UQ_attribute != null)
-                    {
-                        if (UQType.GetProperty("UniqueGroupId")?.GetValue(UQ_attribute, null) is int groupId)
-                        {
-                            if (!nullability)
-                            {
-                                UniqueOptions.Add(AddUniqueConstraint(Property.Name, groupId));
-                            }
-                            else
-                            {
-                                throw ProtectDbAndThrow($"Property '{Property.Name}' of Entity '{TableType.Name}' is marked with UNIQUE CONSTRAINT and it Requires to be 'NOT NULL'.");
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach (string AddColumn in ColumnsToAdd.Where(x => x != "Inactive"))
-            {
-                if (AddColumn != "Id")
-                {
-                    PropertyInfo Property = Properties.First(x => x.Name == AddColumn);
-                    object[] attributes = Property.GetCustomAttributes(true);
-                    alterTable.Append(GetDatatypeCommand(Property.PropertyType, attributes, Property.Name, TableType.Name));
-                    alterTable.Append(SQLiteColumn(attributes, firstTime, Property.PropertyType, Property.Name, TableType.Name, false));
-
-                    if (attributes.Length > 0)
-                    {
-                        object? FK_attribute = attributes.FirstOrDefault(x => x.GetType() == FkType);
-                        bool nullability = true;
-                        if (FK_attribute != null)
-                        {
-                            var tName = FkType.GetProperty("TableName")?.GetValue(FK_attribute, null);
-                            var tColumn = FkType.GetProperty("Column")?.GetValue(FK_attribute, null);
-                            if (FkType.GetProperty("Nullability")?.GetValue(FK_attribute, null) is bool isNullable)
-                            {
-                                nullability = isNullable;
-                                FkOptions.Add(AddForeignKey(Property.Name, tName, tColumn, isNullable));
-                            }
-                        }
-                        else
-                        {
-                            object? NN_attribute = attributes.FirstOrDefault(x => x.GetType() == typeof(NotNullable));
-                            if (NN_attribute != null)
-                            {
-                                nullability = false;
-                            }
-                        }
-
-                        object? UQ_attribute = attributes.FirstOrDefault(x => x.GetType() == UQType);
-
-                        if (UQ_attribute != null)
-                        {
-                            if (UQType.GetProperty("UniqueGroupId")?.GetValue(UQ_attribute, null) is int groupId)
-                            {
-                                if (!nullability)
-                                {
-                                    UniqueOptions.Add(AddUniqueConstraint(Property.Name, groupId));
-                                }
-                                else
-                                {
-                                    throw ProtectDbAndThrow($"Property '{Property.Name}' of Entity '{TableType.Name}' is marked with UNIQUE CONSTRAINT and it Requires to be 'NOT NULL'.");
-                                }
-                            }
-                        }
-                    }
-                }
                 else
                 {
-                    alterTable.Append(_multiDatabaseSelector.GetPrimaryKeyCommand());
+                    ColumnInfo? oldColumn = commonColumns.FirstOrDefault(x => x.PropertyName == column.PropertyName);
+                    bool firstTime = oldColumn == null;
+                    alterTable.Append(GetDatatypeCommand(column, oldColumn, TableType.Name, firstTime));
                 }
             }
 
-            string FkCommand = $"{alterTable}{CreateForeignKeyConstraintLite(FkOptions, TableType.Name)}{CreateUniqueConstraintLite(UniqueOptions, TableType.Name)}";
+            string fkCommand = CreateForeignKeyConstraintLite(entityInfo.ForeignKeys, TableType.Name);
+            string uniqueCommand = CreateUniqueConstraintLite(entityInfo.UniqueIndices, TableType.Name);
+            string indicesCommand = CreateIndicesLite(entityInfo.Indices, TableType.Name);
 
-            if (FkCommand.Length > 1)
+            string tableCommand = $"{alterTable}{fkCommand}";
+            string transferCommand = TransferOldTableData(commonColumnNames, TableType.Name, OldTablename);
+
+            if (tableCommand.Length > 1)
             {
-                FkCommand = $"{FkCommand.Substring(0, FkCommand.Length - 2)}); ";
+                tableCommand = $"{tableCommand.Substring(0, tableCommand.Length - 2)}); ";
             }
 
-            alterTable.Clear(); foreignKeys.Clear();
-            closingCommand.Append(FkCommand);
-            closingCommand.Append($"{TransferOldTableData(CommonColumns, Tablename, OldTablename)} DROP TABLE {OldTablename};");
-            closingCommand.Append($"ALTER TABLE {Tablename} RENAME TO {OldTablename}; ALTER TABLE {OldTablename} RENAME TO {Tablename};");
-            closingCommand.Append($" DROP INDEX IF EXISTS {OldTablename}");
-            CustomTransaction.Add(closingCommand.ToString());
+            alterTable.Clear();
+            closingCommand.Append(tableCommand);
+            closingCommand.Append($"{transferCommand} DROP TABLE {OldTablename};");
+            closingCommand.Append($"ALTER TABLE {TableType.Name} RENAME TO {OldTablename}; ALTER TABLE {OldTablename} RENAME TO {TableType.Name};");
+            closingCommand.Append($" DROP INDEX IF EXISTS {OldTablename};{uniqueCommand}{indicesCommand}");
+            string final = closingCommand.ToString();
+            CustomTransaction.Add(final);
             closingCommand.Clear();
-
-            if (missingInactiveColumn)
-            {
-                string updateInactiveCol = $"Update {Tablename} set Inactive = 0 where Inactive is null;";
-                AfterMath.Add(updateInactiveCol);
-            }
         }
+
+        //void ForeignKeyLiteAssignment(Type TableType, bool firstTime)
+        //{
+        //    string Tablename = TableType.Name;
+        //    string OldTablename = $"{TableType.Name}_Old";
+
+        //    Type FkType = typeof(ForeignKey);
+        //    Type UQType = typeof(Unique);
+
+        //    List<UniqueInfo> UniqueOptions = new();
+        //    List<NonUniqueIndex> Indices = new();
+        //    List<FKInfo> FkOptions = new();
+
+        //    List<NonUniqueIndex> tempIndices = new();
+        //    List<UniqueInfo> tempUniqueOptions = new();
+        //    List<FKInfo> tempFkOptions = new();
+
+        //    var relationType = GetRelationEntityType(TableType);
+
+        //    if (relationType != null)
+        //    {
+        //        var builderType = typeof(RelationBuilder<>).MakeGenericType(relationType);
+        //        var builder = Activator.CreateInstance(builderType);
+
+        //        var instance = Activator.CreateInstance(TableType);
+        //        var configureMethod = TableType.GetMethod("Congifure");
+        //        configureMethod!.Invoke(instance, new[] { builder });
+
+        //        var flags = BindingFlags.NonPublic | BindingFlags.Instance;
+        //        var indices = (List<BHEntityIndex>)builderType.GetField("Indices", flags)!.GetValue(builder)!;
+        //        var relations = (List<IBHRelation>)builderType.GetField("Relations", flags)!.GetValue(builder)!;
+
+        //        ushort uniqueId = 256;
+
+        //        foreach (var index in indices)
+        //        {
+        //            if (index.IsIndexUnique)
+        //            {
+        //                tempIndices.Add(new NonUniqueIndex(index.IndexColumns, uniqueId));
+        //            }
+        //            else
+        //            {
+        //                foreach (var prop in index.IndexColumns)
+        //                {
+        //                    tempUniqueOptions.Add(AddUniqueConstraint(prop, uniqueId));
+        //                }
+        //            }
+
+        //            uniqueId++;
+        //        }
+
+        //        foreach (var relation in relations)
+        //        {
+        //            tempFkOptions.Add(new FKInfo()
+        //            {
+        //                ReferencedColumn = "Id",
+        //                ReferencedTable = relation.IncludedType.Name,
+        //                OnDelete = relation.OnDelete.DeleteAction,
+        //                IsNullable = relation.OnDelete.IsNullable,
+        //                PropertyName = relation.ForeignKeyPropertyName
+        //            });
+        //        }
+        //    }
+
+        //    List<string> ColumnNames = new();
+        //    List<string> NewColumnNames = new()
+        //    {
+        //        "Inactive"
+        //    };
+
+        //    List<SQLiteForeignKeySchema> SchemaInfo = connection.Query<SQLiteForeignKeySchema>($"PRAGMA foreign_key_list({Tablename});", null);
+        //    List<SQLiteTableInfo> ColumnsInfo = connection.Query<SQLiteTableInfo>($"PRAGMA table_info({Tablename});", null);
+
+        //    foreach (SQLiteTableInfo column in ColumnsInfo)
+        //    {
+        //        ColumnNames.Add(column.name);
+        //    }
+
+        //    PropertyInfo[] Properties = TableType.GetProperties();
+        //    foreach (PropertyInfo Property in Properties)
+        //    {
+        //        NewColumnNames.Add(Property.Name);
+        //    }
+
+        //    List<string> ColumnsToDrop = ColumnNames.Except(NewColumnNames).ToList();
+
+        //    if (ColumnsToDrop.Any())
+        //    {
+        //        throw ProtectDbAndThrow($"Error at Table '{TableType.Name}' on Dropping Columns. You CAN ONLY Drop Columns of a Table in Developer Mode, or by using the CLI 'update' command with the '--force' argument => 'bhl update --force'");
+        //    }
+
+        //    List<string> ColumnsToAdd = NewColumnNames.Except(ColumnNames).ToList();
+        //    bool missingInactiveColumn = ColumnsToAdd.Contains("Inactive");
+        //    List<string> CommonColumns = ColumnNames.Intersect(NewColumnNames).ToList();
+
+        //    StringBuilder alterTable = new();
+        //    StringBuilder foreignKeys = new();
+        //    StringBuilder closingCommand = new();
+
+        //    alterTable.Append($"ALTER TABLE {Tablename} RENAME TO {OldTablename}; CREATE TABLE {Tablename} (");
+        //    alterTable.Append(GetDatatypeCommand(typeof(int), Array.Empty<object>(), "Inactive", TableType.Name));
+        //    alterTable.Append(" NULL, ");
+
+        //    foreach (string AddColumn in CommonColumns.Where(x => x != "Inactive"))
+        //    {
+        //        PropertyInfo Property = Properties.First(x => x.Name == AddColumn);
+        //        object[] attributes = Property.GetCustomAttributes(true);
+
+        //        if (Property.Name != "Id")
+        //        {
+        //            alterTable.Append(GetDatatypeCommand(Property.PropertyType, attributes, Property.Name, TableType.Name));
+        //            SQLiteTableInfo existingCol = ColumnsInfo.First(x => x.name == AddColumn);
+        //            alterTable.Append(SQLiteColumn(attributes, firstTime, Property.PropertyType, Property.Name, TableType.Name, existingCol.notnull));
+        //        }
+        //        else
+        //        {
+        //            alterTable.Append(_multiDatabaseSelector.GetPrimaryKeyCommand());
+        //        }
+
+        //        if (attributes.Length > 0)
+        //        {
+        //            object? FK_attribute = attributes.FirstOrDefault(x => x.GetType() == FkType);
+        //            bool nullability = true;
+        //            if (FK_attribute != null)
+        //            {
+        //                var tName = FkType.GetProperty("TableName")?.GetValue(FK_attribute, null);
+        //                var tColumn = FkType.GetProperty("Column")?.GetValue(FK_attribute, null);
+        //                if (FkType.GetProperty("Nullability")?.GetValue(FK_attribute, null) is bool isNullable)
+        //                {
+        //                    nullability = isNullable;
+        //                    FkOptions.Add(AddForeignKey(Property.Name, tName, tColumn, isNullable));
+        //                }
+        //            }
+        //            else
+        //            {
+        //                object? NN_attribute = attributes.FirstOrDefault(x => x.GetType() == typeof(NotNullable));
+        //                if (NN_attribute != null)
+        //                {
+        //                    nullability = false;
+        //                }
+        //            }
+
+        //            object? UQ_attribute = attributes.FirstOrDefault(x => x.GetType() == UQType);
+
+        //            if (UQ_attribute != null)
+        //            {
+        //                if (UQType.GetProperty("UniqueGroupId")?.GetValue(UQ_attribute, null) is int groupId)
+        //                {
+        //                    if (!nullability)
+        //                    {
+        //                        UniqueOptions.Add(AddUniqueConstraint(Property.Name, groupId));
+        //                    }
+        //                    else
+        //                    {
+        //                        throw ProtectDbAndThrow($"Property '{Property.Name}' of Entity '{TableType.Name}' is marked with UNIQUE CONSTRAINT and it Requires to be 'NOT NULL'.");
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    foreach (string AddColumn in ColumnsToAdd.Where(x => x != "Inactive"))
+        //    {
+        //        if (AddColumn != "Id")
+        //        {
+        //            PropertyInfo Property = Properties.First(x => x.Name == AddColumn);
+        //            object[] attributes = Property.GetCustomAttributes(true);
+        //            alterTable.Append(GetDatatypeCommand(Property.PropertyType, attributes, Property.Name, TableType.Name));
+        //            alterTable.Append(SQLiteColumn(attributes, firstTime, Property.PropertyType, Property.Name, TableType.Name, false));
+
+        //            if (attributes.Length > 0)
+        //            {
+        //                object? FK_attribute = attributes.FirstOrDefault(x => x.GetType() == FkType);
+        //                bool nullability = true;
+        //                if (FK_attribute != null)
+        //                {
+        //                    var tName = FkType.GetProperty("TableName")?.GetValue(FK_attribute, null);
+        //                    var tColumn = FkType.GetProperty("Column")?.GetValue(FK_attribute, null);
+        //                    if (FkType.GetProperty("Nullability")?.GetValue(FK_attribute, null) is bool isNullable)
+        //                    {
+        //                        nullability = isNullable;
+        //                        FkOptions.Add(AddForeignKey(Property.Name, tName, tColumn, isNullable));
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    object? NN_attribute = attributes.FirstOrDefault(x => x.GetType() == typeof(NotNullable));
+        //                    if (NN_attribute != null)
+        //                    {
+        //                        nullability = false;
+        //                    }
+        //                }
+
+        //                object? UQ_attribute = attributes.FirstOrDefault(x => x.GetType() == UQType);
+
+        //                if (UQ_attribute != null)
+        //                {
+        //                    if (UQType.GetProperty("UniqueGroupId")?.GetValue(UQ_attribute, null) is int groupId)
+        //                    {
+        //                        if (!nullability)
+        //                        {
+        //                            UniqueOptions.Add(AddUniqueConstraint(Property.Name, groupId));
+        //                        }
+        //                        else
+        //                        {
+        //                            throw ProtectDbAndThrow($"Property '{Property.Name}' of Entity '{TableType.Name}' is marked with UNIQUE CONSTRAINT and it Requires to be 'NOT NULL'.");
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        else
+        //        {
+        //            alterTable.Append(_multiDatabaseSelector.GetPrimaryKeyCommand());
+        //        }
+        //    }
+
+        //    string FkCommand = $"{alterTable}{CreateForeignKeyConstraintLite(FkOptions, TableType.Name)}{CreateUniqueConstraintLite(UniqueOptions, TableType.Name)}";
+
+        //    if (FkCommand.Length > 1)
+        //    {
+        //        FkCommand = $"{FkCommand.Substring(0, FkCommand.Length - 2)}); ";
+        //    }
+
+        //    alterTable.Clear(); foreignKeys.Clear();
+        //    closingCommand.Append(FkCommand);
+        //    closingCommand.Append($"{TransferOldTableData(CommonColumns, Tablename, OldTablename)} DROP TABLE {OldTablename};");
+        //    closingCommand.Append($"ALTER TABLE {Tablename} RENAME TO {OldTablename}; ALTER TABLE {OldTablename} RENAME TO {Tablename};");
+        //    closingCommand.Append($" DROP INDEX IF EXISTS {OldTablename}");
+        //    CustomTransaction.Add(closingCommand.ToString());
+        //    closingCommand.Clear();
+
+        //    if (missingInactiveColumn)
+        //    {
+        //        string updateInactiveCol = $"Update {Tablename} set Inactive = 0 where Inactive is null;";
+        //        AfterMath.Add(updateInactiveCol);
+        //    }
+        //}
 
         Type? GetRelationEntityType(Type entityType)
         {
@@ -557,14 +606,37 @@ namespace BlackHole.Internal
             string result = string.Empty;
             foreach (int columnsGroup in tableUQs.Select(x => x.GroupId).Distinct())
             {
-                result += $"{CreateUQConstraint(tableUQs.Where(x => x.GroupId == columnsGroup).ToList(), TableName)}, ";
+                result += CreateUQConstraint(tableUQs.Where(x => x.GroupId == columnsGroup).ToList(), TableName);
             }
-            return result;
+
+            if (result.Length > 1)
+            {
+                return result.Substring(0, result.Length - 1);
+            }
+
+            return string.Empty;
+        }
+
+        string CreateIndicesLite(List<IndexInfo> tableUQs, string TableName)
+        {
+            string result = string.Empty;
+
+            foreach (var idx in tableUQs)
+            {
+                result += CreateIndexConstraint(idx, TableName);
+            }
+
+            if (result.Length > 1)
+            {
+                return result.Substring(0, result.Length - 1);
+            }
+
+            return string.Empty;
         }
 
         string CreateUQConstraint(List<UniqueInfo> groupUQ, string TableName)
         {
-            string constraintBegin = "CONSTRAINT";
+            string constraintBegin = "CREATE UNIQUE INDEX";
 
             int groupId = 0;
             string uniqueColumns = string.Empty;
@@ -577,13 +649,29 @@ namespace BlackHole.Internal
 
             uniqueColumns = uniqueColumns.Remove(0, 1);
             string key = $"{TableName}_{groupId}";
-            string hash = HashKey(key);
-            string uniqueConstraint = $"{constraintBegin} uc_{groupId}_{hash} UNIQUE ({uniqueColumns})";
+            string hash = HashKey(key).Substring(2, 9);
+            string uniqueConstraint = $"{constraintBegin} uc_{groupId}_{hash} ON {TableName} ({uniqueColumns}); ";
 
-            //var unique = index.IsIndexUnique ? "UNIQUE " : "";
-            //var columns = string.Join(", ", index.IndexColumns);
-            //var indexName = $"IX_{tableName}_{string.Join("_", index.IndexColumns)}";
-            //var sql = $"CREATE {uniqueAttribute}INDEX IF NOT EXISTS uc_{hash} ON {tableName} ({columns});";
+            return uniqueConstraint;
+        }
+
+        string CreateIndexConstraint(IndexInfo groupUQ, string TableName)
+        {
+            string constraintBegin = "CREATE INDEX";
+
+            int groupId = groupUQ.GroupId;
+            string uniqueColumns = string.Empty;
+
+            foreach (string Uq in groupUQ.PropertyNames)
+            {
+                uniqueColumns += $",{Uq}";
+            }
+
+            uniqueColumns = uniqueColumns.Remove(0, 1);
+            string key = $"{TableName}_{groupId}";
+            string hash = HashKey(key).Substring(1, 7);
+            string uniqueConstraint = $"{constraintBegin} ix_{groupId}_{hash} ON {TableName} ({uniqueColumns}); ";
+
             return uniqueConstraint;
         }
 
@@ -660,72 +748,118 @@ namespace BlackHole.Internal
             return new Exception(errorMessage);
         }
 
-        string GetDatatypeCommand(Type PropertyType, object[] attributes, string Propertyname, string TableName)
+        //string GetDatatypeCommand(Type PropertyType, int size, bool nullable, string Propertyname, string TableName, bool firstTime, bool wasNull)
+        //{
+        //    string propTypeName = PropertyType.Name;
+        //    string dataCommand;
+
+        //    string nulText = nullable ? "NULL " : "NOT NULL ";
+
+        //    switch (propTypeName)
+        //    {
+        //        case "String":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[0]}({size}) {nulText}";
+        //            break;
+        //        case "Char":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[1]} {nulText}";
+        //            break;
+        //        case "Int16":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[2]} {nulText}";
+        //            break;
+        //        case "Int32":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[3]} {nulText}";
+        //            break;
+        //        case "Int64":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[4]} {nulText}";
+        //            break;
+        //        case "Decimal":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[5]} {nulText}";
+        //            break;
+        //        case "Single":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[6]} {nulText}";
+        //            break;
+        //        case "Double":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[7]} {nulText}";
+        //            break;
+        //        case "Guid":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[8]} {nulText}";
+        //            break;
+        //        case "Boolean":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[9]} {nulText}";
+        //            break;
+        //        case "DateTime":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[10]} {nulText}";
+        //            break;
+        //        case "DateTimeOffset":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[12]} {nulText}"; // e.g. "DATETIMEOFFSET" for SQL Server, "TEXT" for SQLite
+        //            break;
+        //        case "Byte[]":
+        //            dataCommand = $"{Propertyname} {SqlDatatypes[11]} {nulText}";
+        //            break;
+        //        default:
+        //            throw ProtectDbAndThrow($"Unsupported property type '{PropertyType.FullName}' at Property '{Propertyname}' of Entity '{TableName}'");
+        //    }
+        //    return dataCommand;
+        //}
+
+        string GetDatatypeCommand(ColumnInfo entityColumn, ColumnInfo? dbColumn, string tableName, bool firstTime)
         {
-            string propTypeName = PropertyType.Name;
+            bool wasNotNull = dbColumn?.IsNullable ?? false;
+
+            string propTypeName = entityColumn.PropertyType.Name;
             string dataCommand;
 
-            if (propTypeName.Contains("Nullable"))
+            string nulText = entityColumn.IsNullable ? "NULL, " : "NOT NULL, ";
+
+            if (!wasNotNull && !firstTime)
             {
-                if (PropertyType.GenericTypeArguments != null && PropertyType.GenericTypeArguments.Length > 0)
-                {
-                    propTypeName = PropertyType.GenericTypeArguments[0].Name;
-                }
+                string defaultVal = GetDefaultValue(entityColumn.PropertyType, entityColumn.PropertyName, tableName);
+                nulText = $"default {defaultVal} {nulText}";
             }
 
             switch (propTypeName)
             {
                 case "String":
-                    object? CharLength = attributes.FirstOrDefault(x => x.GetType() == typeof(VarCharSize));
-
-                    if (CharLength != null)
-                    {
-                        var Lngth = CharLength.GetType().GetProperty("Charlength")?.GetValue(CharLength, null);
-                        dataCommand = $"{Propertyname} {SqlDatatypes[0]}({Lngth?.ToString()}) ";
-                    }
-                    else
-                    {
-                        dataCommand = $"{Propertyname} {SqlDatatypes[0]}(255) ";
-                    }
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[0]}({entityColumn.Size}) {nulText}";
                     break;
                 case "Char":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[1]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[1]} {nulText}";
                     break;
                 case "Int16":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[2]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[2]} {nulText}";
                     break;
                 case "Int32":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[3]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[3]} {nulText}";
                     break;
                 case "Int64":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[4]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[4]} {nulText}";
                     break;
                 case "Decimal":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[5]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[5]} {nulText}";
                     break;
                 case "Single":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[6]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[6]} {nulText}";
                     break;
                 case "Double":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[7]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[7]} {nulText}";
                     break;
                 case "Guid":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[8]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[8]} {nulText}";
                     break;
                 case "Boolean":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[9]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[9]} {nulText}";
                     break;
                 case "DateTime":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[10]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[10]} {nulText}";
                     break;
                 case "DateTimeOffset":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[12]} "; // e.g. "DATETIMEOFFSET" for SQL Server, "TEXT" for SQLite
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[12]} {nulText}"; // e.g. "DATETIMEOFFSET" for SQL Server, "TEXT" for SQLite
                     break;
                 case "Byte[]":
-                    dataCommand = $"{Propertyname} {SqlDatatypes[11]} ";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[11]} {nulText}";
                     break;
                 default:
-                    throw ProtectDbAndThrow($"Unsupported property type '{PropertyType.FullName}' at Property '{Propertyname}' of Entity '{TableName}'");
+                    throw ProtectDbAndThrow($"Unsupported property type '{entityColumn.PropertyType.FullName}' at Property '{entityColumn.PropertyName}' of Entity '{tableName}'");
             }
             return dataCommand;
         }

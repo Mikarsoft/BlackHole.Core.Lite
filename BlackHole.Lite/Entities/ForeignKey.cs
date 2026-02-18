@@ -1,5 +1,4 @@
-﻿using BlackHole.Lite.Entities;
-
+﻿
 namespace BlackHole.Entities
 {
     /// <summary>

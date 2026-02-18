@@ -1,5 +1,5 @@
 ﻿using BlackHole.DataProviders;
-using BlackHole.Lite.Entities;
+using BlackHole.Entities;
 using System.Linq.Expressions;
 using System.Reflection;
 

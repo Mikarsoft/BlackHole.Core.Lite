@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace BlackHole.Lite.Entities
+namespace BlackHole.Entities
 {
     /// <summary>
     /// 
@@ -78,13 +78,11 @@ namespace BlackHole.Lite.Entities
 
         bool IBHRelation.IsList => IsList;
 
-        BHDeleteCase IBHRelation.OnDelete => _onDelete;
+        BHDeleteCase IBHRelation.OnDelete => ForeignKey.OnDelete;
 
         string IBHRelation.ForeignKeyPropertyName => ForeignKey.PropertyName;
 
         BHBackwardIncludeInfo? IBHRelation.BackwardInclude => _backwardsInclude;
-
-        private BHDeleteCase _onDelete { get; set; } = new();
 
         private BHBackwardIncludeInfo? _backwardsInclude { get; set; }
 

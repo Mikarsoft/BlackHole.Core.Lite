@@ -676,13 +676,26 @@ namespace BlackHole.DataProviders
 
                 if (value != null)
                 {
-                    if (value?.GetType() == typeof(Guid))
+                    var valueType = value?.GetType();
+
+                    switch (valueType)
                     {
-                        parameters.Add(new SqliteParameter(@property.Name, value.ToString()));
-                    }
-                    else
-                    {
-                        parameters.Add(new SqliteParameter(@property.Name, value));
+                        case Type t when t == typeof(Guid):
+                            parameters.Add(new SqliteParameter(@property.Name, value?.ToString()));
+                            break;
+                        case Type t when t == typeof(DateTimeOffset):
+                            if (value is DateTimeOffset dt)
+                            {
+                                parameters.Add(new SqliteParameter(@property.Name, dt.ToString("yyyy-MM-ddTHH:mm:sszzz")));
+                            }
+                            else
+                            {
+                                parameters.Add(new SqliteParameter(@property.Name, value));
+                            }
+                            break;
+                        default:
+                            parameters.Add(new SqliteParameter(@property.Name, value));
+                            break;
                     }
                 }
                 else

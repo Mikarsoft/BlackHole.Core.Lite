@@ -1,10 +1,10 @@
 ﻿
 
-namespace BlackHole.Lite.Internal
+namespace BlackHole.Internal
 {
-    internal class NonUniqueIndex
+    internal class IndexInfo
     {
-        internal NonUniqueIndex(string[] propNames, int groupId)
+        internal IndexInfo(string[] propNames, int groupId)
         {
             PropertyNames = propNames;
             GroupId = groupId;

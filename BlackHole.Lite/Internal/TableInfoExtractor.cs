@@ -1,9 +1,7 @@
 ﻿using BlackHole.Entities;
-using BlackHole.Internal;
-using BlackHole.Lite.Entities;
 using System.Reflection;
 
-namespace BlackHole.Lite.Internal
+namespace BlackHole.Internal
 {
     internal class TableInfoExtractor
     {
@@ -13,17 +11,23 @@ namespace BlackHole.Lite.Internal
 
         internal readonly List<UniqueInfo> UniqueIndices = new();
 
-        internal readonly List<NonUniqueIndex> Indices  = new();
+        internal readonly List<IndexInfo> Indices  = new();
 
-        internal string TableName { get; private set; } = string.Empty;
+        Type TableType { get; set; }
 
         Type FkType = typeof(ForeignKey);
         Type UQType = typeof(Unique);
         Type NNType = typeof(NotNullable);
+        Type VCSize = typeof(VarCharSize);
 
-        public void ExtractData(Type TableType)
+        internal TableInfoExtractor(Type tableType)
         {
-            TableName = TableType.Name;
+            TableType = tableType;
+        }
+
+        public TableCompleteInfo ExtractData()
+        {
+            string TableName = TableType.Name;
 
             var relationType = GetRelationEntityType(TableType);
 
@@ -44,9 +48,9 @@ namespace BlackHole.Lite.Internal
 
                 foreach (var index in indices)
                 {
-                    if (index.IsIndexUnique)
+                    if (!index.IsIndexUnique)
                     {
-                        Indices.Add(new NonUniqueIndex(index.IndexColumns, uniqueId));
+                        Indices.Add(new IndexInfo(index.IndexColumns, uniqueId));
                     }
                     else
                     {
@@ -76,7 +80,9 @@ namespace BlackHole.Lite.Internal
                 }
             }
 
-            PropertyInfo[] Properties = TableType.GetProperties();
+            PropertyInfo[] Properties = TableType.GetProperties()
+                .Where(p => IsAllowedType(p.PropertyType))
+                .ToArray();
 
             foreach (var property in Properties)
             {
@@ -90,6 +96,7 @@ namespace BlackHole.Lite.Internal
                 }
 
                 bool nullability = mandatoryNull;
+                int size = 255;
 
                 if (attributes.Length > 0)
                 {
@@ -125,6 +132,16 @@ namespace BlackHole.Lite.Internal
                         }
                     }
 
+                    object? textSize = attributes.FirstOrDefault(x => x.GetType() == VCSize);
+
+                    if (textSize != null)
+                    {
+                        if (VCSize.GetProperty("Charlength")?.GetValue(textSize, null) is int chSize)
+                        {
+                            size = chSize;
+                        }
+                    }
+
                     if (nullability != mandatoryNull)
                     {
                         throw new Exception($"Inconsistent Nullablility between Attributes and Property at Property '{property.Name}' of  Table '{TableName}'");
@@ -152,13 +169,42 @@ namespace BlackHole.Lite.Internal
                     }
                 }
 
+                Type propBaseType;
+
+                if (property.PropertyType.Name.Contains("Nullable"))
+                {
+                    if (property.PropertyType.GenericTypeArguments != null && property.PropertyType.GenericTypeArguments.Length > 0)
+                    {
+                        propBaseType = property.PropertyType.GenericTypeArguments[0];
+                    }
+                    else
+                    {
+                        propBaseType = property.PropertyType;
+                    }
+                }
+                else
+                {
+                    propBaseType = property.PropertyType;
+                }
+
                 Columns.Add(new ColumnInfo()
                 {
+                    PropertyType = property.PropertyType,
+                    PropertyBaseType = propBaseType,
                     PropertyName= property.Name,
                     IsNullable = nullability,
-                    IsPrimaryKey = property.Name == "Id",      
+                    IsPrimaryKey = property.Name == "Id",
+                    Size = size
                 });
             }
+
+            return new TableCompleteInfo(TableType)
+            {
+                Columns = Columns,
+                ForeignKeys = ForeignKeys,
+                Indices = Indices,
+                UniqueIndices = UniqueIndices
+            };
         }
 
         Type? GetRelationEntityType(Type entityType)
@@ -171,6 +217,20 @@ namespace BlackHole.Lite.Internal
                 type = type.BaseType;
             }
             return null;
+        }
+
+        private readonly HashSet<Type> AllowedTypes = new()
+        {
+            typeof(int), typeof(long), typeof(short), typeof(byte),
+            typeof(bool), typeof(char), typeof(float), typeof(double),
+            typeof(decimal), typeof(string), typeof(Guid),
+            typeof(DateTime), typeof(DateTimeOffset), typeof(byte[])
+        };
+
+        bool IsAllowedType(Type type)
+        {
+            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+            return AllowedTypes.Contains(underlying);
         }
     }
 }

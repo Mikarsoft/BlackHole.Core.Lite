@@ -35,7 +35,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public PreJoinsData<T, TOther> InnerJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -52,7 +52,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public PreJoinsData<T, TOther> OuterJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -69,7 +69,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public PreJoinsData<T, TOther> LeftJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {
@@ -86,7 +86,7 @@ namespace BlackHole.Core
         /// <typeparam name="TOther">Second BlackHoleEntity</typeparam>
         /// <returns>PrejoinData</returns>
         public PreJoinsData<T, TOther> RightJoin<T, TOther>()
-            where T : BlackHoleEntity where TOther : BlackHoleEntity
+            where T : BHEntity where TOther : BHEntity
         {
             return new PreJoinsData<T, TOther>()
             {

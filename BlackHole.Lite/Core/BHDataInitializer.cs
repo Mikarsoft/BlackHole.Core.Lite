@@ -36,7 +36,7 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <returns>Entity Context</returns>
-        public BHEntityContext<T> For<T>() where T : BlackHoleEntity
+        public BHEntityContext<T> For<T>() where T : BHEntity
         {
             return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DatabaseName);
         }

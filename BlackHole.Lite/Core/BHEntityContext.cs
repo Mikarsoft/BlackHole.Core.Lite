@@ -63,7 +63,7 @@ namespace BlackHole.Core
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <typeparam name="G"></typeparam>
-    public class BHEntityContext<T, G> where T : BlackHoleEntity  where G : BlackHoleEntity
+    public class BHEntityContext<T, G> where T : BHEntity  where G : BHEntity
     {
         internal bool WithActivator { get; }
         internal string ThisTable { get; }

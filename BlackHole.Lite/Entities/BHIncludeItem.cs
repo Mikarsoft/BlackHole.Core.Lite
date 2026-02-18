@@ -1,6 +1,5 @@
-﻿using BlackHole.Entities;
-
-namespace BlackHole.Lite.Entities
+﻿
+namespace BlackHole.Entities
 {
     public struct BHIncludeItem<T> where T : BHEntity
     {

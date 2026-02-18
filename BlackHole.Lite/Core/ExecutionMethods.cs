@@ -1,7 +1,6 @@
 ﻿using BlackHole.CoreSupport;
 using BlackHole.DataProviders;
 using BlackHole.Entities;
-using BlackHole.Lite.Entities;
 using System.Linq.Expressions;
 
 namespace BlackHole.Core
@@ -24,7 +23,7 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
             Expression<Func<T, BHIncludeItem<G>>> include)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             return context.MapEntity<T, G>(context.ConnectionString);
         }
@@ -39,7 +38,7 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
             Expression<Func<T, BHIncludeList<G>>> include)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             return context.MapEntity<T, G>(context.ConnectionString);
         }
@@ -55,7 +54,7 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
             Expression<Func<G, BHIncludeList<H>>> include)
-            where T : BlackHoleEntity where G : BlackHoleEntity where H : BlackHoleEntity
+            where T : BHEntity where G : BHEntity where H : BHEntity
         {
             return context.MapEntity<T, G, H>(context.ConnectionString);
         }
@@ -71,7 +70,7 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
             Expression<Func<G, BHIncludeItem<H>>> include)
-            where T : BlackHoleEntity where G : BlackHoleEntity where H : BlackHoleEntity
+            where T : BHEntity where G : BHEntity where H : BHEntity
         {
             return context.MapEntity<T, G, H>(context.ConnectionString);
         }
@@ -85,7 +84,7 @@ namespace BlackHole.Core
         /// <param name="Id"></param>
         /// <returns></returns>
         public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id) 
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -111,7 +110,7 @@ namespace BlackHole.Core
         /// <param name="bhTransaction"></param>
         /// <returns></returns>
         public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id, BHTransaction bhTransaction) 
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -134,7 +133,7 @@ namespace BlackHole.Core
         /// <typeparam name="G"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context) where T : BlackHoleEntity where G : BlackHoleEntity
+        public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context) where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -148,7 +147,7 @@ namespace BlackHole.Core
         }
 
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context, BHTransaction bhTransaction)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -163,7 +162,7 @@ namespace BlackHole.Core
 
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
-            where T : BlackHoleEntity  where G : BlackHoleEntity
+            where T : BHEntity  where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -182,7 +181,7 @@ namespace BlackHole.Core
 
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -200,7 +199,7 @@ namespace BlackHole.Core
 
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -218,7 +217,7 @@ namespace BlackHole.Core
 
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
-            where T : BlackHoleEntity where G : BlackHoleEntity
+            where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
 
@@ -239,7 +238,7 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static bool Any<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        public static bool Any<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             string limit = 1.GetLimiter();
             if (context.WithActivator)
@@ -255,7 +254,7 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T,bool>> predicate) where T : BlackHoleEntity
+        public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T,bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             string limit = 1.GetLimiter();
@@ -272,7 +271,7 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static bool Any<T>(this BHEntityContext<T> context, BHTransaction bHTransaction) where T : BlackHoleEntity
+        public static bool Any<T>(this BHEntityContext<T> context, BHTransaction bHTransaction) where T : BHEntity
         {
             string limit = 1.GetLimiter();
             if (context.WithActivator)
@@ -288,7 +287,7 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bHTransaction) where T : BlackHoleEntity
+        public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bHTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
             string limit = 1.GetLimiter();
@@ -305,7 +304,7 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static int Count<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        public static int Count<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -320,7 +319,7 @@ namespace BlackHole.Core
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static int Count<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
+        public static int Count<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
 
@@ -338,7 +337,7 @@ namespace BlackHole.Core
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <param name="context">Entity's Context</param>
         /// <returns>List of All Table's Entities</returns>
-        public static List<T> GetAllEntries<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        public static List<T> GetAllEntries<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -355,7 +354,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>List of All Table's Entities</returns>
-        public static List<T> GetAllEntries<T>(this BHEntityContext<T> context, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static List<T> GetAllEntries<T>(this BHEntityContext<T> context, BHTransaction bhTransaction) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -372,7 +371,7 @@ namespace BlackHole.Core
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <param name="context">Entity's Context</param>
         /// <returns>List of Inactive Entities</returns>
-        public static List<T> GetAllInactiveEntries<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        public static List<T> GetAllInactiveEntries<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -390,7 +389,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>List of Inactive Entities</returns>
-        public static List<T> GetAllInactiveEntries<T>(this BHEntityContext<T> context, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static List<T> GetAllInactiveEntries<T>(this BHEntityContext<T> context, BHTransaction bhTransaction) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -407,7 +406,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="Id">Id of the Entry</param>
         /// <returns>Entity</returns>
-        public static T? GetEntryById<T>(this BHEntityContext<T> context, int Id) where T : BlackHoleEntity
+        public static T? GetEntryById<T>(this BHEntityContext<T> context, int Id) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -427,7 +426,7 @@ namespace BlackHole.Core
         /// <param name="Id">Id of the Entry</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Entity</returns>
-        public static T? GetEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static T? GetEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -446,7 +445,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="predicate">Lambda Expression</param>
         /// <returns>Entity</returns>
-        public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
+        public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             string limit = 1.GetLimiter();
@@ -466,7 +465,7 @@ namespace BlackHole.Core
         /// <param name="predicate">Lambda Expression</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Entity</returns>
-        public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static T? GetEntryWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             string limit = 1.GetLimiter();
@@ -485,7 +484,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="predicate">Lambda Expression</param>
         /// <returns>List of Entities</returns>
-        public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
+        public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
@@ -504,7 +503,7 @@ namespace BlackHole.Core
         /// <param name="predicate"></param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>List of Entities</returns>
-        public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static List<T> GetEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
@@ -522,7 +521,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="entry">Entity to Insert</param>
         /// <returns>Inserted Id</returns>
-        public static int InsertEntry<T>(this BHEntityContext<T> context, T entry) where T : BlackHoleEntity
+        public static int InsertEntry<T>(this BHEntityContext<T> context, T entry) where T : BHEntity
         {
             return _dataProvider.InsertScalar($"insert into {context.ThisTable} ({context.PropertyNames},Inactive", $"values ({context.PropertyParams}, 0", entry, context.ConnectionString);
         }
@@ -536,7 +535,7 @@ namespace BlackHole.Core
         /// <param name="entry">Entity to Insert</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Inserted Id</returns>
-        public static int InsertEntry<T>(this BHEntityContext<T> context, T entry, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static int InsertEntry<T>(this BHEntityContext<T> context, T entry, BHTransaction bhTransaction) where T : BHEntity
         {
             return _dataProvider.InsertScalar($"insert into {context.ThisTable} ({context.PropertyNames}, Inactive", $"values ({context.PropertyParams}, 0", entry, bhTransaction.transaction);
         }
@@ -549,7 +548,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="entries">Entities to Insert</param>
         /// <returns>List of Inserted Ids</returns>
-        public static List<int> InsertEntries<T>(this BHEntityContext<T> context, List<T> entries) where T : BlackHoleEntity
+        public static List<int> InsertEntries<T>(this BHEntityContext<T> context, List<T> entries) where T : BHEntity
         {
             List<int> Ids = new();
             using (BlackHoleTransaction bhTransaction = new(context.ConnectionString))
@@ -568,7 +567,7 @@ namespace BlackHole.Core
         /// <param name="entries">Entities to Insert</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>List of Inserted Ids</returns>
-        public static List<int> InsertEntries<T>(this BHEntityContext<T> context, List<T> entries, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static List<int> InsertEntries<T>(this BHEntityContext<T> context, List<T> entries, BHTransaction bhTransaction) where T : BHEntity
         {
             return _dataProvider.MultiInsertScalar<T>($"insert into {context.ThisTable} ({context.PropertyNames},Inactive", $"values ({context.PropertyParams}, 0", entries, bhTransaction.transaction);
         }
@@ -583,7 +582,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="entry">Entry to Update</param>
         /// <returns>Success</returns>
-        public static bool UpdateEntryById<T>(this BHEntityContext<T> context, T entry) where T : BlackHoleEntity
+        public static bool UpdateEntryById<T>(this BHEntityContext<T> context, T entry) where T : BHEntity
         {
             return _dataProvider.ExecuteEntry($"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", entry, context.ConnectionString);
         }
@@ -599,7 +598,7 @@ namespace BlackHole.Core
         /// <param name="entry">Entry to Update</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool UpdateEntryById<T>(this BHEntityContext<T> context, T entry, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool UpdateEntryById<T>(this BHEntityContext<T> context, T entry, BHTransaction bhTransaction) where T : BHEntity
         {
             return _dataProvider.ExecuteEntry($"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", entry, bhTransaction.transaction);
         }
@@ -614,7 +613,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="entries">Entries to Update</param>
         /// <returns>Success</returns>
-        public static bool UpdateEntriesById<T>(this BHEntityContext<T> context, List<T> entries) where T : BlackHoleEntity
+        public static bool UpdateEntriesById<T>(this BHEntityContext<T> context, List<T> entries) where T : BHEntity
         {
             return UpdateMany(entries, $"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", context.ConnectionString);
         }
@@ -630,7 +629,7 @@ namespace BlackHole.Core
         /// <param name="entries">Entries to Update</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool UpdateEntriesById<T>(this BHEntityContext<T> context, List<T> entries, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool UpdateEntriesById<T>(this BHEntityContext<T> context, List<T> entries, BHTransaction bhTransaction) where T : BHEntity
         {
             return UpdateMany(entries, $"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", bhTransaction.transaction);
         }
@@ -646,7 +645,7 @@ namespace BlackHole.Core
         /// <param name="predicate">Lambda Expression</param>
         /// <param name="entry">Entry to Update</param>
         /// <returns>Success</returns>
-        public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry) where T : BlackHoleEntity
+        public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             sql.AdditionalParameters(entry);
@@ -669,7 +668,7 @@ namespace BlackHole.Core
         /// <param name="entry">Entry to Update</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool UpdateEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, T entry, BHTransaction bhTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             sql.AdditionalParameters(entry);
@@ -689,7 +688,7 @@ namespace BlackHole.Core
         /// <typeparam name="T">BlackHoleEntity</typeparam>
         /// <param name="context">Entity's Context</param>
         /// <returns>Success</returns>
-        public static bool DeleteAllEntries<T>(this BHEntityContext<T> context) where T : BlackHoleEntity
+        public static bool DeleteAllEntries<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -708,7 +707,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool DeleteAllEntries<T>(this BHEntityContext<T> context, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool DeleteAllEntries<T>(this BHEntityContext<T> context, BHTransaction bhTransaction) where T : BHEntity
         {
             if (context.WithActivator)
             {
@@ -728,7 +727,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="Id">Id of the Entry</param>
         /// <returns>Success</returns>
-        public static bool DeleteEntryById<T>(this BHEntityContext<T> context, int Id) where T : BlackHoleEntity
+        public static bool DeleteEntryById<T>(this BHEntityContext<T> context, int Id) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -751,7 +750,7 @@ namespace BlackHole.Core
         /// <param name="Id">Id of the Entry</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool DeleteEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool DeleteEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -771,7 +770,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="Id">Id of the Entry</param>
         /// <returns>Success</returns>
-        public static bool DeleteInactiveEntryById<T>(this BHEntityContext<T> context, int Id) where T : BlackHoleEntity
+        public static bool DeleteInactiveEntryById<T>(this BHEntityContext<T> context, int Id) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -788,7 +787,7 @@ namespace BlackHole.Core
         /// <param name="Id">Id of the Entry</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool DeleteInactiveEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool DeleteInactiveEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -804,7 +803,7 @@ namespace BlackHole.Core
         /// <param name="Id">Id of the Entry</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool ReactivateEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool ReactivateEntryById<T>(this BHEntityContext<T> context, int Id, BHTransaction bhTransaction) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -819,7 +818,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="Id">Id of the Entry</param>
         /// <returns>Success</returns>
-        public static bool ReactivateEntryById<T>(this BHEntityContext<T> context, int Id) where T : BlackHoleEntity
+        public static bool ReactivateEntryById<T>(this BHEntityContext<T> context, int Id) where T : BHEntity
         {
             BHParameters Params = new();
             Params.Add("Id", Id);
@@ -837,7 +836,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="predicate">Lambda Expression</param>
         /// <returns>Success</returns>
-        public static bool DeleteEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
+        public static bool DeleteEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
@@ -859,7 +858,7 @@ namespace BlackHole.Core
         /// <param name="predicate">Lambda Expression</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>Success</returns>
-        public static bool DeleteEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static bool DeleteEntriesWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
@@ -877,7 +876,7 @@ namespace BlackHole.Core
         /// <param name="context">Entity's Context</param>
         /// <param name="predicate">Lambda Expression</param>
         /// <returns>List of Ids</returns>
-        public static List<int> GetIdsWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BlackHoleEntity
+        public static List<int> GetIdsWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
@@ -896,7 +895,7 @@ namespace BlackHole.Core
         /// <param name="predicate">Lambda Expression</param>
         /// <param name="bhTransaction">Transaction Object</param>
         /// <returns>List of Ids</returns>
-        public static List<int> GetIdsWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BlackHoleEntity
+        public static List<int> GetIdsWhere<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bhTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers(string.Empty, null, 0);
             if (context.WithActivator)
@@ -915,7 +914,7 @@ namespace BlackHole.Core
         /// <param name="data">All data of the previous Joins sequence</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData Then<T, TOther>(this JoinsData<T, TOther> data)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return data.NextAction();
         }
@@ -929,7 +928,7 @@ namespace BlackHole.Core
         /// <param name="previousData">All data of the previous Joins sequence</param>
         /// <returns>Updated PreJoins Data</returns>
         public static PreJoinsData<T, TOther> InnerJoin<T, TOther>(this JoinsData previousData)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return previousData.NextJoin<T, TOther>("inner");
         }
@@ -943,7 +942,7 @@ namespace BlackHole.Core
         /// <param name="previousData">All data of the previous Joins sequence</param>
         /// <returns>Updated PreJoins Data</returns>
         public static PreJoinsData<T, TOther> OuterJoin<T, TOther>(this JoinsData previousData)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return previousData.NextJoin<T, TOther>("full outer");
         }
@@ -957,7 +956,7 @@ namespace BlackHole.Core
         /// <param name="previousData">All data of the previous Joins sequence</param>
         /// <returns>Updated PreJoins Data</returns>
         public static PreJoinsData<T, TOther> RightJoin<T, TOther>(this JoinsData previousData)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return previousData.NextJoin<T, TOther>("right");
         }
@@ -971,7 +970,7 @@ namespace BlackHole.Core
         /// <param name="previousData">All data of the previous Joins sequence</param>
         /// <returns>Updated PreJoins Data</returns>
         public static PreJoinsData<T, TOther> LeftJoin<T, TOther>(this JoinsData previousData)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return previousData.NextJoin<T, TOther>("left");
         }
@@ -987,7 +986,7 @@ namespace BlackHole.Core
         /// <param name="otherkey">Selected Property of Second Entity</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> On<T, TOther, TKey>(this PreJoinsData<T, TOther> data, Expression<Func<T, TKey>> key, Expression<Func<TOther, TKey>> otherkey)
-            where T : BlackHoleEntity where TOther : BlackHoleEntity where TKey : IComparable<TKey>
+            where T : BHEntity where TOther : BHEntity where TKey : IComparable<TKey>
         {
             return data.CreateJoin(key, otherkey);
         }
@@ -1003,7 +1002,7 @@ namespace BlackHole.Core
         /// <param name="otherkey">Selected Property of Second Entity</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> And<T, TOther, TKey>(this JoinsData<T, TOther> currentData, Expression<Func<T, TKey>> key, Expression<Func<TOther, TKey>> otherkey)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return currentData.AdditionalJoint(key, otherkey);
         }
@@ -1019,7 +1018,7 @@ namespace BlackHole.Core
         /// <param name="otherkey">Selected Property of Second Entity</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> Or<T, TOther, TKey>(this JoinsData<T, TOther> currentData, Expression<Func<T, TKey>> key, Expression<Func<TOther, TKey>> otherkey)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return currentData.OptionalJoint(key, otherkey);
         }
@@ -1034,7 +1033,7 @@ namespace BlackHole.Core
         /// <param name="predicate">Lambda Expression</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> WhereFirst<T, TOther>(this JoinsData<T, TOther> currentData, Expression<Func<T, bool>> predicate)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return currentData.AddWhereStatementOne(predicate);
         }
@@ -1049,7 +1048,7 @@ namespace BlackHole.Core
         /// <param name="predicate">Lambda Expression</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> WhereSecond<T, TOther>(this JoinsData<T, TOther> currentData, Expression<Func<TOther, bool>> predicate)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity
+             where T : BHEntity where TOther : BHEntity
         {
             return currentData.AddWhereStatementTwo(predicate);
         }
@@ -1066,7 +1065,7 @@ namespace BlackHole.Core
         /// <param name="key">Selected Property</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> GiveMapPriorityToSecond<T, TOther, TKey>(this JoinsData<T, TOther> data, Expression<Func<TOther, TKey>> key)
-             where T : BlackHoleEntity where TOther : BlackHoleEntity where TKey : IComparable
+             where T : BHEntity where TOther : BHEntity where TKey : IComparable
         {
             if (data.Ignore)
             {
@@ -1088,7 +1087,7 @@ namespace BlackHole.Core
         /// <param name="key">Selected Property</param>
         /// <returns>Updated Joins Data</returns>
         public static JoinsData<T, TOther> GiveMapPriorityToFirst<T, TOther, TKey>(this JoinsData<T, TOther> data, Expression<Func<T, TKey>> key)
-            where T : BlackHoleEntity where TOther : BlackHoleEntity where TKey : IComparable
+            where T : BHEntity where TOther : BHEntity where TKey : IComparable
         {
             if (data.Ignore)
             {
