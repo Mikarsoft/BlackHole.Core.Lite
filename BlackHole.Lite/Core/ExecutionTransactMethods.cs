@@ -17,13 +17,12 @@ namespace BlackHole.Core
         /// <param name="context"></param>
         /// <param name="include"></param>
         /// <returns></returns>
-        public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
+        public static BHTransactEntityContext<T, G> Include<T, G>(this BHTransactEntityContext<T> context,
             Expression<Func<T, BHIncludeItem<G>>> include)
             where T : BHEntity where G : BHEntity
         {
             var propName = include.GetPropertyName();
 
-            var keyReverse = $"{typeof(G).Name}_{propName}";
             var keyMain = $"{typeof(T).Name}_{propName}";
 
             string fkPropName;
@@ -36,7 +35,7 @@ namespace BlackHole.Core
             }
             else
             {
-                fkPropName = BHDataProvider.FkReverseMap[keyReverse];
+                fkPropName = BHDataProvider.FkReverseMap[keyMain];
                 reversed = true;
             }
 
@@ -50,7 +49,7 @@ namespace BlackHole.Core
                 ParentIndex = -1
             });
 
-            return context.MapEntity<T, G>();
+            return context.MapEntityTransact<T, G>();
         }
 
         /// <summary>
@@ -61,7 +60,7 @@ namespace BlackHole.Core
         /// <param name="context"></param>
         /// <param name="include"></param>
         /// <returns></returns>
-        public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
+        public static BHTransactEntityContext<T, G> Include<T, G>(this BHTransactEntityContext<T> context,
             Expression<Func<T, BHIncludeList<G>>> include)
             where T : BHEntity where G : BHEntity
         {
@@ -79,7 +78,7 @@ namespace BlackHole.Core
                 ParentIndex = -1
             });
 
-            return context.MapEntity<T, G>();
+            return context.MapEntityTransact<T, G>();
         }
 
         /// <summary>
@@ -91,13 +90,12 @@ namespace BlackHole.Core
         /// <param name="context"></param>
         /// <param name="include"></param>
         /// <returns></returns>
-        public static BHEntityContext<T, G> Include<T, H, G>(this BHEntityContext<T, H> context,
+        public static BHTransactEntityContext<T, G> Include<T, H, G>(this BHTransactEntityContext<T, H> context,
           Expression<Func<T, BHIncludeItem<G>>> include)
           where T : BHEntity where G : BHEntity where H : BHEntity
         {
             var propName = include.GetPropertyName();
 
-            var keyReverse = $"{typeof(G).Name}_{propName}";
             var keyMain = $"{typeof(T).Name}_{propName}";
 
             string fkPropName;
@@ -110,7 +108,7 @@ namespace BlackHole.Core
             }
             else
             {
-                fkPropName = BHDataProvider.FkReverseMap[keyReverse];
+                fkPropName = BHDataProvider.FkReverseMap[keyMain];
                 reversed = true;
             }
 
@@ -124,7 +122,7 @@ namespace BlackHole.Core
                 ParentIndex = -1
             });
 
-            return context.MapEntity<T, H, G>();
+            return context.MapEntityTransact<T, H, G>();
         }
 
         /// <summary>
@@ -136,7 +134,7 @@ namespace BlackHole.Core
         /// <param name="context"></param>
         /// <param name="include"></param>
         /// <returns></returns>
-        public static BHEntityContext<T, G> Include<T, H, G>(this BHEntityContext<T, H> context,
+        public static BHTransactEntityContext<T, G> Include<T, H, G>(this BHTransactEntityContext<T, H> context,
             Expression<Func<T, BHIncludeList<G>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
         {
@@ -154,7 +152,7 @@ namespace BlackHole.Core
                 ParentIndex = -1
             });
 
-            return context.MapEntity<T, H, G>();
+            return context.MapEntityTransact<T, H, G>();
         }
 
         /// <summary>
@@ -166,13 +164,13 @@ namespace BlackHole.Core
         /// <param name="context"></param>
         /// <param name="include"></param>
         /// <returns></returns>
-        public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
+        public static BHTransactEntityContext<T, H> ThenInclude<T, G, H>(this BHTransactEntityContext<T, G> context,
             Expression<Func<G, BHIncludeList<H>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
         {
             var propName = include.GetPropertyName();
 
-            string fkPropName = BHDataProvider.FkReverseMap[$"{typeof(T).Name}_{propName}"];
+            string fkPropName = BHDataProvider.FkReverseMap[$"{typeof(G).Name}_{propName}"];
 
             context.Includes.Add(new IncludePart
             {
@@ -185,7 +183,7 @@ namespace BlackHole.Core
                 ParentIndex = context.Includes.Count - 1
             });
 
-            return context.MapEntity<T, G, H>();
+            return context.MapEntityTransact<T, G, H>();
         }
 
         /// <summary>
@@ -197,14 +195,13 @@ namespace BlackHole.Core
         /// <param name="context"></param>
         /// <param name="include"></param>
         /// <returns></returns>
-        public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
+        public static BHTransactEntityContext<T, H> ThenInclude<T, G, H>(this BHTransactEntityContext<T, G> context,
             Expression<Func<G, BHIncludeItem<H>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
         {
             var propName = include.GetPropertyName();
 
-            var keyReverse = $"{typeof(G).Name}_{propName}";
-            var keyMain = $"{typeof(T).Name}_{propName}";
+            var keyMain = $"{typeof(G).Name}_{propName}";
 
             string fkPropName;
             bool reversed;
@@ -216,7 +213,7 @@ namespace BlackHole.Core
             }
             else
             {
-                fkPropName = BHDataProvider.FkReverseMap[keyReverse];
+                fkPropName = BHDataProvider.FkReverseMap[keyMain];
                 reversed = true;
             }
 
@@ -231,32 +228,7 @@ namespace BlackHole.Core
                 ParentIndex = context.Includes.Count - 1
             });
 
-            return context.MapEntity<T, G, H>();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="Id"></param>
-        /// <returns></returns>
-        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id)
-            where T : BHEntity where G : BHEntity
-        {
-            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
-
-            BHParameters Params = new();
-            Params.Add("Id", Id);
-
-            if (context.WithActivator)
-            {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
-                    Params.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
-            }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Id = @Id",
-                Params.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
+            return context.MapEntityTransact<T, G, H>();
         }
 
         /// <summary>

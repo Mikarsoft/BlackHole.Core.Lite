@@ -26,18 +26,18 @@ namespace BlackHole.CoreSupport
 
     internal class IncludePart
     {
-        public Type TableType { get; set; } = null!;
+        internal Type TableType { get; set; } = null!;
 
-        public string ForeignKeyProperty { get; set; } = null!;
+        internal string ForeignKeyProperty { get; set; } = null!;
 
-        public Type? ParentTableType { get; set; }
+        internal Type? ParentTableType { get; set; }
 
-        public string NavigationPropertyName { get; set; } = null!;
+        internal string NavigationPropertyName { get; set; } = null!;
 
-        public bool IsReversed { get; set; }
+        internal bool IsReversed { get; set; }
 
-        public bool IsList { get; set; }
+        internal bool IsList { get; set; }
 
-        public int ParentIndex { get; set; }
+        internal int ParentIndex { get; set; }
     }
 }
