@@ -9,7 +9,12 @@ namespace BlackHole.Core
     public static class BHDataProvider
     {
         internal static List<BHEntityContext> EntitiesContext = new();
+
         internal static List<StoredView> StoredViews = new();
+
+        internal static Dictionary<string, string> FkMap = new Dictionary<string, string>();
+        internal static Dictionary<string, string> FkReverseMap = new Dictionary<string, string>();
+
         internal static string DefaultDbName {  get; set; } = string.Empty;
 
         /// <summary>
@@ -38,7 +43,7 @@ namespace BlackHole.Core
         /// <returns>Entity Context</returns>
         public static BHEntityContext<T> For<T>() where T : BHEntity
         {
-            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DefaultDbName);
+            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DefaultDbName.BuildConnectionString());
         }
 
         /// <summary>
@@ -105,19 +110,43 @@ namespace BlackHole.Core
 
         internal static BHEntityContext<T> MapEntity<T>(this BHEntityContext context, string connectionString) where T : BHEntity
         {
-            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
+            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames,
+                context.PropertyParams, context.UpdateParams, connectionString);
         }
 
-        internal static BHEntityContext<T, G> MapEntity<T, G>(this BHEntityContext<T> context, string connectionString)
+        internal static BHEntityContext<T, G> MapEntity<T, G>(this BHEntityContext<T> context)
             where T : BHEntity where G : BHEntity
         {
-            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
+            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames,
+                context.PropertyParams, context.UpdateParams, context.Includes, context.ConnectionString);
         }
 
-        internal static BHEntityContext<T, H> MapEntity<T, G, H>(this BHEntityContext<T, G> context, string connectionString)
+        internal static BHEntityContext<T, H> MapEntity<T, G, H>(this BHEntityContext<T, G> context)
             where T : BHEntity where G : BHEntity where H : BHEntity
         {
-            return new (context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames, context.PropertyParams, context.UpdateParams, connectionString);
+            return new (context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames,
+                context.PropertyParams, context.UpdateParams, context.Includes, context.ConnectionString);
+        }
+
+        internal static BHTransactEntityContext<T> MapEntityTransact<T>(this BHEntityContext<T> context, 
+            BlackHoleTransaction transaction) where T : BHEntity
+        {
+            return new(context.WithActivator, context.ThisTable, context.Columns,
+                context.PropertyNames, context.PropertyParams, context.UpdateParams, transaction);
+        }
+
+        internal static BHTransactEntityContext<T, G> MapEntityTransact<T, G>(this BHTransactEntityContext<T> context)
+            where T : BHEntity where G : BHEntity
+        {
+            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames,
+                context.PropertyParams, context.UpdateParams, context.Includes, context._transatcion);
+        }
+
+        internal static BHTransactEntityContext<T, H> MapEntityTransact<T, G, H>(this BHTransactEntityContext<T, G> context)
+            where T : BHEntity where G : BHEntity where H : BHEntity
+        {
+            return new(context.WithActivator, context.ThisTable, context.Columns, context.PropertyNames,
+                context.PropertyParams, context.UpdateParams, context.Includes, context._transatcion);
         }
 
         internal static void AddStoredView<Dto>(StoredView addView, string databaseName)

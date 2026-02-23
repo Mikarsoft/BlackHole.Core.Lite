@@ -6,13 +6,19 @@ namespace BlackHole.Entities
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public struct BHIncludeList<T> where T : BHEntity
+    public class BHIncludeList<T> where T : BHEntity
     {
-        public List<T> Items { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<T> Items { get; set; } = new();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
         public void Add(T item)
         {
-            Items ??= new List<T>();
             Items.Add(item);
         }
     }

@@ -1,78 +1,67 @@
-﻿using BlackHole.DataProviders;
-using BlackHole.Entities;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 
 namespace BlackHole.CoreSupport
 {
     internal static class ExpressionTranslatorToSql
     {
-        internal static IncludeQueryCommand BuildIncludeSql<T>(this List<IncludeInfo> includes,
-            string rootPkColumn, List<string> rootColumns)
+        internal static IncludeQueryCommand BuildIncludeSql<T>(this List<IncludePart> includes, List<string> rootColumns)
         {
             string rootTable = typeof(T).Name;
-
+            string rootAlias = "r";
             var columns = new List<string>();
             var joins = new List<string>();
 
-            foreach (var inc in includes)
+            // Root columns
+            foreach (var col in rootColumns)
             {
-                string relatedTable = inc.EntityType.Name + "s"; // e.g. Customer → Customers
-                string alias = inc.ColumnPrefix!.TrimEnd('_');   // e.g. "Customer_" → "Customer"
+                columns.Add($"{rootAlias}.{col} AS r_{col}");
+            }
 
-                // Add aliased columns for this entity
-                var props = inc.EntityType.GetProperties()
-                    .Where(p => !p.PropertyType.IsGenericType ||
-                           (p.PropertyType.GetGenericTypeDefinition() != typeof(BHIncludeList<>) &&
-                            p.PropertyType.GetGenericTypeDefinition() != typeof(BHIncludeItem<>)));
+            for (int i = 0; i < includes.Count; i++)
+            {
+                var props = includes[i].TableType.GetProperties()
+                        .Where(p => p.PropertyType.IsAllowedType())
+                        .ToArray();
+
+                string tableName = includes[i].TableType.Name;
+
+                string prefix = $"c{i}_";
 
                 foreach (var prop in props)
                 {
-                    columns.Add($"{alias}.{prop.Name} AS {inc.ColumnPrefix}{prop.Name}");
+                    columns.Add($"c{i}.{prop.Name} AS {prefix}{prop.Name}");
                 }
 
-                // Build the JOIN
-                string parentAlias;
-
-                if (inc.ParentType == null)
+                if (includes[i].ParentTableType == null)
                 {
-                    parentAlias = rootTable;
+                    if (includes[i].IsReversed)
+                    {
+                        joins.Add($"LEFT JOIN {tableName} c{i} on c{i}.{includes[i].ForeignKeyProperty} = r.Id");
+                    }
+                    else
+                    {
+                        joins.Add($"LEFT JOIN {tableName} c{i} on c{i}.Id = r.{includes[i].ForeignKeyProperty}");
+                    }
                 }
                 else
                 {
-                    parentAlias = inc.ParentPkPrefix!.TrimEnd('_');
+                    if (includes[i].IsReversed)
+                    {
+                        joins.Add($"LEFT JOIN {tableName} c{i} on c{i}.{includes[i].ForeignKeyProperty} = c{includes[i].ParentIndex}.Id");
+                    }
+                    else
+                    {
+                        joins.Add($"LEFT JOIN {tableName} c{i} on c{i}.Id = c{includes[i].ParentIndex}.{includes[i].ForeignKeyProperty}");
+                    }
                 }
-
-                string joinCondition;
-
-                if (inc.IsCollection)
-                {
-                    // One-to-many: child has FK pointing to parent
-                    // e.g. LEFT JOIN OrderItems Customer ON OrderItem.OrderId = Order.Id
-                    string fkName = inc.ParentType == null
-                        ? $"{rootTable}Id"                          // e.g. OrderId
-                        : $"{inc.ParentType.Name}Id";               // e.g. CustomerId
-
-                    joinCondition = $"{alias}.{fkName} = {parentAlias}.Id";
-                }
-                else
-                {
-                    // Many-to-one: parent has FK pointing to child
-                    // e.g. LEFT JOIN Customers Customer ON Order.CustomerId = Customer.Id
-                    string fkName = $"{inc.NavigationProperty!.Name}Id"; // e.g. CustomerId
-
-                    joinCondition = $"{parentAlias}.{fkName} = {alias}.Id";
-                }
-
-                joins.Add($"LEFT JOIN {relatedTable} {alias} ON {joinCondition}");
             }
 
-            string selectColumns = string.Join(", ", columns);
-            string joinClause = string.Join("\n", joins);
-
-            return new IncludeQueryCommand{
-                Query = selectColumns,
-                Joins = joinClause
+            return new IncludeQueryCommand
+            {
+                Query = string.Join(", ", columns),
+                Joins = string.Join(" ", joins),
+                RootLetter = rootAlias
             };
         }
 
@@ -1127,7 +1116,7 @@ namespace BlackHole.CoreSupport
             }
 
             string? letter = data.TablesToLetters.First(x => x.Table == typeof(T)).Letter;
-            ColumnsAndParameters colsAndParams = predicate.SplitMembers<T>(letter, data.DynamicParams, data.ParamsCount);
+            ColumnsAndParameters colsAndParams = predicate.SplitMembers(letter, data.DynamicParams, data.ParamsCount);
             data.DynamicParams = colsAndParams.Parameters;
             data.ParamsCount = colsAndParams.Count;
 
@@ -1151,7 +1140,7 @@ namespace BlackHole.CoreSupport
             }
 
             string? letter = data.TablesToLetters.First(x => x.Table == typeof(TOther)).Letter;
-            ColumnsAndParameters colsAndParams = predicate.SplitMembers<TOther>(letter, data.DynamicParams, data.ParamsCount);
+            ColumnsAndParameters colsAndParams = predicate.SplitMembers(letter, data.DynamicParams, data.ParamsCount);
             data.DynamicParams = colsAndParams.Parameters;
             data.ParamsCount = colsAndParams.Count;
 

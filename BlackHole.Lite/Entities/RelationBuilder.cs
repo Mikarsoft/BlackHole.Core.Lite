@@ -35,20 +35,6 @@ namespace BlackHole.Entities
             Relations.Add(key);
             return key;
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="include"></param>
-        /// <returns></returns>
-        public BHIncludeKey<T, G> HasMany<G>(Expression<Func<T, BHIncludeList<G>>> include) where G : BHEntity
-        {
-            var key = new BHIncludeKey<T, G>(include.GetPropertyName(), true);
-            Relations.Add(key);
-            return key;
-        }
-
     }
 
     /// <summary>

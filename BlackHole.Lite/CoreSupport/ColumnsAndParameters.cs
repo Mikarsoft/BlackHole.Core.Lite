@@ -23,4 +23,21 @@ namespace BlackHole.CoreSupport
 
         internal string RootLetter { get; set; } = string.Empty;
     }
+
+    internal class IncludePart
+    {
+        public Type TableType { get; set; } = null!;
+
+        public string ForeignKeyProperty { get; set; } = null!;
+
+        public Type? ParentTableType { get; set; }
+
+        public string NavigationPropertyName { get; set; } = null!;
+
+        public bool IsReversed { get; set; }
+
+        public bool IsList { get; set; }
+
+        public int ParentIndex { get; set; }
+    }
 }

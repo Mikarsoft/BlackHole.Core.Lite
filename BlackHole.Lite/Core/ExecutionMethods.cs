@@ -25,7 +25,35 @@ namespace BlackHole.Core
             Expression<Func<T, BHIncludeItem<G>>> include)
             where T : BHEntity where G : BHEntity
         {
-            return context.MapEntity<T, G>(context.ConnectionString);
+            var propName = include.GetPropertyName();
+
+            var keyMain = $"{typeof(T).Name}_{propName}";
+
+            string fkPropName;
+            bool reversed;
+
+            if (BHDataProvider.FkMap.ContainsKey(keyMain))
+            {
+                fkPropName = BHDataProvider.FkMap[keyMain];
+                reversed = false;
+            }
+            else
+            {
+                fkPropName = BHDataProvider.FkReverseMap[keyMain];
+                reversed = true;
+            }
+
+            context.Includes.Add(new IncludePart
+            {
+                TableType = typeof(G),
+                ForeignKeyProperty = fkPropName,
+                IsReversed = reversed,
+                IsList = false,
+                NavigationPropertyName = propName,
+                ParentIndex = -1
+            });
+
+            return context.MapEntity<T, G>();
         }
 
         /// <summary>
@@ -40,7 +68,95 @@ namespace BlackHole.Core
             Expression<Func<T, BHIncludeList<G>>> include)
             where T : BHEntity where G : BHEntity
         {
-            return context.MapEntity<T, G>(context.ConnectionString);
+            var propName = include.GetPropertyName();
+
+            string fkPropName = BHDataProvider.FkReverseMap[$"{typeof(T).Name}_{propName}"];
+
+            context.Includes.Add(new IncludePart
+            {
+                IsReversed = true,
+                TableType = typeof(G),
+                ForeignKeyProperty = fkPropName,
+                IsList = true,
+                NavigationPropertyName = propName,
+                ParentIndex = -1
+            });
+
+            return context.MapEntity<T, G>();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="H"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="include"></param>
+        /// <returns></returns>
+        public static BHEntityContext<T, G> Include<T, H, G>(this BHEntityContext<T, H> context,
+          Expression<Func<T, BHIncludeItem<G>>> include)
+          where T : BHEntity where G : BHEntity where H : BHEntity
+        {
+            var propName = include.GetPropertyName();
+
+            var keyMain = $"{typeof(T).Name}_{propName}";
+
+            string fkPropName;
+            bool reversed;
+
+            if (BHDataProvider.FkMap.ContainsKey(keyMain))
+            {
+                fkPropName = BHDataProvider.FkMap[keyMain];
+                reversed = false;
+            }
+            else
+            {
+                fkPropName = BHDataProvider.FkReverseMap[keyMain];
+                reversed = true;
+            }
+
+            context.Includes.Add(new IncludePart
+            {
+                TableType = typeof(G),
+                ForeignKeyProperty = fkPropName,
+                IsReversed = reversed,
+                IsList = false,
+                NavigationPropertyName = propName,
+                ParentIndex = -1
+            });
+
+            return context.MapEntity<T, H, G>();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="H"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="include"></param>
+        /// <returns></returns>
+        public static BHEntityContext<T, G> Include<T, H, G>(this BHEntityContext<T, H> context,
+            Expression<Func<T, BHIncludeList<G>>> include)
+            where T : BHEntity where G : BHEntity where H : BHEntity
+        {
+            var propName = include.GetPropertyName();
+
+            string fkPropName = BHDataProvider.FkReverseMap[$"{typeof(T).Name}_{propName}"];
+
+            context.Includes.Add(new IncludePart
+            {
+                IsReversed = true,
+                TableType = typeof(G),
+                ForeignKeyProperty = fkPropName,
+                IsList = true,
+                NavigationPropertyName = propName,
+                ParentIndex = -1
+            });
+
+            return context.MapEntity<T, H, G>();
         }
 
         /// <summary>
@@ -56,7 +172,22 @@ namespace BlackHole.Core
             Expression<Func<G, BHIncludeList<H>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
         {
-            return context.MapEntity<T, G, H>(context.ConnectionString);
+            var propName = include.GetPropertyName();
+
+            string fkPropName = BHDataProvider.FkReverseMap[$"{typeof(G).Name}_{propName}"];
+
+            context.Includes.Add(new IncludePart
+            {
+                IsReversed = true,
+                TableType = typeof(H),
+                ForeignKeyProperty = fkPropName,
+                IsList = true,
+                NavigationPropertyName = propName,
+                ParentTableType = typeof(G),
+                ParentIndex = context.Includes.Count - 1
+            });
+
+            return context.MapEntity<T, G, H>();
         }
 
         /// <summary>
@@ -72,7 +203,36 @@ namespace BlackHole.Core
             Expression<Func<G, BHIncludeItem<H>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
         {
-            return context.MapEntity<T, G, H>(context.ConnectionString);
+            var propName = include.GetPropertyName();
+
+            var keyMain = $"{typeof(G).Name}_{propName}";
+
+            string fkPropName;
+            bool reversed;
+
+            if (BHDataProvider.FkMap.ContainsKey(keyMain))
+            {
+                fkPropName = BHDataProvider.FkMap[keyMain];
+                reversed = false;
+            }
+            else
+            {
+                fkPropName = BHDataProvider.FkReverseMap[keyMain];
+                reversed = true;
+            }
+
+            context.Includes.Add(new IncludePart
+            {
+                TableType = typeof(H),
+                ForeignKeyProperty = fkPropName,
+                IsReversed = reversed,
+                IsList = false,
+                NavigationPropertyName = propName,
+                ParentTableType = typeof(G),
+                ParentIndex = context.Includes.Count - 1
+            });
+
+            return context.MapEntity<T, G, H>();
         }
 
         /// <summary>
@@ -86,17 +246,17 @@ namespace BlackHole.Core
         public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id) 
             where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             BHParameters Params = new();
             Params.Add("Id", Id);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
                     Params.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Id = @Id",
                 Params.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
         }
 
@@ -112,17 +272,17 @@ namespace BlackHole.Core
         public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id, BHTransaction bhTransaction) 
             where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             BHParameters Params = new();
             Params.Add("Id", Id);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Id = @Id and {inc.RootLetter}.Inactive = 0",
                     Params.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Id = @Id",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Id = @Id",
                 Params.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
         }
 
@@ -135,36 +295,52 @@ namespace BlackHole.Core
         /// <returns></returns>
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context) where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Inactive = 0",
                     null, context.ConnectionString, context.Includes);
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins}",
                 null, context.ConnectionString, context.Includes);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="bhTransaction"></param>
+        /// <returns></returns>
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Inactive = 0",
                     null, bhTransaction.transaction, context.Includes);
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins}",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins}",
                 null, bhTransaction.transaction, context.Includes);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
             where T : BHEntity  where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
 
@@ -172,63 +348,90 @@ namespace BlackHole.Core
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
                     sql.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r{inc.Joins} where {sql.Columns} {limit}",
                 sql.Parameters, context.ConnectionString, context.Includes).FirstOrDefault();
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="predicate"></param>
+        /// <param name="bhTransaction"></param>
+        /// <returns></returns>
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
             string limit = 1.GetLimiter();
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns} {limit}",
                     sql.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns} {limit}",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {sql.Columns} {limit}",
                 sql.Parameters, bhTransaction.transaction, context.Includes).FirstOrDefault();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
             where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
                     sql.Parameters, context.ConnectionString, context.Includes);
             }
 
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {sql.Columns}",
                 sql.Parameters, context.ConnectionString, context.Includes);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="G"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="predicate"></param>
+        /// <param name="bhTransaction"></param>
+        /// <returns></returns>
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
         {
-            var inc = context.Includes.BuildIncludeSql<T>("Id", context.Columns);
+            var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
 
             ColumnsAndParameters sql = predicate.SplitMembers(inc.RootLetter, null, 0);
 
             if (context.WithActivator)
             {
-                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
+                return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {inc.RootLetter}.Inactive = 0 and {sql.Columns}",
                     sql.Parameters, bhTransaction.transaction, context.Includes);
             }
-            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} {inc.Joins} where {sql.Columns}",
+            return _dataProvider.QueryWithIncludes<T>($"select {inc.Query} from {context.ThisTable} r {inc.Joins} where {sql.Columns}",
                 sql.Parameters, bhTransaction.transaction, context.Includes);
         }
 
@@ -253,6 +456,7 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
+        /// <param name="predicate"></param>
         /// <returns></returns>
         public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T,bool>> predicate) where T : BHEntity
         {
@@ -270,6 +474,7 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
+        /// <param name="bHTransaction"></param>
         /// <returns></returns>
         public static bool Any<T>(this BHEntityContext<T> context, BHTransaction bHTransaction) where T : BHEntity
         {
@@ -286,6 +491,8 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
+        /// <param name="predicate"></param>
+        /// <param name="bHTransaction"></param>
         /// <returns></returns>
         public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bHTransaction) where T : BHEntity
         {
@@ -318,6 +525,7 @@ namespace BlackHole.Core
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
+        /// <param name="predicate"></param>
         /// <returns></returns>
         public static int Count<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
@@ -523,7 +731,8 @@ namespace BlackHole.Core
         /// <returns>Inserted Id</returns>
         public static int InsertEntry<T>(this BHEntityContext<T> context, T entry) where T : BHEntity
         {
-            return _dataProvider.InsertScalar($"insert into {context.ThisTable} ({context.PropertyNames},Inactive", $"values ({context.PropertyParams}, 0", entry, context.ConnectionString);
+            entry.Id = _dataProvider.InsertScalar($"insert into {context.ThisTable} ({context.PropertyNames},Inactive", $"values ({context.PropertyParams}, 0", entry, context.ConnectionString);
+            return entry.Id;
         }
 
         /// <summary>
@@ -537,7 +746,8 @@ namespace BlackHole.Core
         /// <returns>Inserted Id</returns>
         public static int InsertEntry<T>(this BHEntityContext<T> context, T entry, BHTransaction bhTransaction) where T : BHEntity
         {
-            return _dataProvider.InsertScalar($"insert into {context.ThisTable} ({context.PropertyNames}, Inactive", $"values ({context.PropertyParams}, 0", entry, bhTransaction.transaction);
+            entry.Id = _dataProvider.InsertScalar($"insert into {context.ThisTable} ({context.PropertyNames}, Inactive", $"values ({context.PropertyParams}, 0", entry, bhTransaction.transaction);
+            return entry.Id;
         }
 
         /// <summary>
@@ -631,7 +841,7 @@ namespace BlackHole.Core
         /// <returns>Success</returns>
         public static bool UpdateEntriesById<T>(this BHEntityContext<T> context, List<T> entries, BHTransaction bhTransaction) where T : BHEntity
         {
-            return UpdateMany(entries, $"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", bhTransaction.transaction);
+            return entries.UpdateMany($"update {context.ThisTable} set {context.UpdateParams} where Id = @Id", bhTransaction.transaction);
         }
 
         /// <summary>
@@ -1195,7 +1405,7 @@ namespace BlackHole.Core
             return sqlCommand.Substring(0, sqlCommand.Length - 1);
         }
 
-        private static bool UpdateMany<T>(List<T> entries, string updateCommand, string connectionString)
+        internal static bool UpdateMany<T>(List<T> entries, string updateCommand, string connectionString)
         {
             BlackHoleTransaction bhTransaction = new(connectionString);
 
@@ -1215,7 +1425,7 @@ namespace BlackHole.Core
             return $" limit {rowsCount} ";
         }
 
-        private static bool UpdateMany<T>(List<T> entries, string updateCommand, BlackHoleTransaction bhTransaction)
+        internal static bool UpdateMany<T>(this List<T> entries, string updateCommand, BlackHoleTransaction bhTransaction)
         {
             bool result = true;
 

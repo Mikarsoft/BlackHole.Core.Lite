@@ -1,7 +1,11 @@
 ﻿using BlackHole.CoreSupport;
+using BlackHole.Entities;
 using BlackHole.Logger;
 using Microsoft.Data.Sqlite;
+using System.Globalization;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 
 namespace BlackHole.DataProviders
 {
@@ -80,13 +84,15 @@ namespace BlackHole.DataProviders
         }
 
         public List<int> MultiInsertScalar<T>(string commandStart, string commandEnd, List<T> entries, BlackHoleTransaction bhTransaction)
+            where T : BHEntity
         {
             List<int> Ids = new();
             string commandText = $"{commandStart}) {commandEnd}) {insertedOutput};";
 
             foreach (T entry in entries)
             {
-                Ids.Add(ExecuteEntryScalar(commandText, entry, bhTransaction));
+                entry.Id = ExecuteEntryScalar(commandText, entry, bhTransaction);
+                Ids.Add(entry.Id);
             }
 
             return Ids;
@@ -298,98 +304,82 @@ namespace BlackHole.DataProviders
             }
         }
 
-        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters, string connectionString, List<IncludeInfo> includes)
+        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters,
+     string connectionString, List<IncludePart> includes) where TRoot : BHEntity
         {
             var rootList = new List<TRoot>();
             var identityMap = new Dictionary<(Type, object), object>();
-            var wiredRelationships = new HashSet<(object parent, string nav, object child)>();
+            var wiredRelationships = new HashSet<(object parent, int includeIndex, object child)>();
+
+            var rootPropMap = typeof(TRoot).GetProperties()
+                .Where(p => p.PropertyType.IsAllowedType())
+                .ToDictionary(p => $"r_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase);
+
+            var includePropMaps = includes.Select((inc, i) =>
+                inc.TableType.GetProperties()
+                    .Where(p => p.PropertyType.IsAllowedType())
+                    .ToDictionary(p => $"c{i}_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase)
+            ).ToArray();
 
             using (SqliteConnection connection = new(connectionString))
             {
                 connection.Open();
-                SqliteCommand Command = new(commandText, connection);
-                ArrayToParameters(parameters, Command.Parameters);
+                SqliteCommand command = new(commandText, connection);
+                ArrayToParameters(parameters, command.Parameters);
 
-                using var reader = Command.ExecuteReader();
-
-                var rootColumns = BuildColumnMap(reader, typeof(TRoot), prefix: null);
-                var includeColumns = includes.Select(inc =>
-                    BuildColumnMap(reader, inc.EntityType, inc.ColumnPrefix)).ToList();
-
-                var parentColumnMaps = includes.Select(inc =>
+                using (var reader = command.ExecuteReader())
                 {
-                    if (inc.ParentType == null) return null;
-                    return BuildColumnMap(reader, inc.ParentType, inc.ParentPkPrefix);
-                }).ToList();
-
-                while (reader.Read())
-                {
-                    var rootPk = reader.GetValue(rootColumns.PkIndex);
-                    var rootKey = (typeof(TRoot), rootPk);
-
-                    if (!identityMap.TryGetValue(rootKey, out var rootObj))
+                    while (reader.Read())
                     {
-                        rootObj = MapColumns(reader, typeof(TRoot), rootColumns);
+                        var resolved = new object?[includes.Count + 1];
 
-                        if (rootObj != null)
+                        // --- Root ---
+                        var rootIdVal = reader["r_Id"];
+                        if (rootIdVal == null || rootIdVal == DBNull.Value) continue;
+
+                        if (!identityMap.TryGetValue((typeof(TRoot), rootIdVal), out var rootObj))
                         {
-                            identityMap[rootKey] = rootObj;
+                            rootObj = Activator.CreateInstance(typeof(TRoot))!;
+                            MapProperties(reader, rootObj, rootPropMap);
+                            identityMap[(typeof(TRoot), rootIdVal)] = rootObj;
                             rootList.Add((TRoot)rootObj);
                         }
-                    }
+                        resolved[0] = rootObj;
 
-                    for (int i = 0; i < includes.Count; i++)
-                    {
-                        var inc = includes[i];
-                        var cols = includeColumns[i];
-
-                        if (reader.IsDBNull(cols.PkIndex)) continue;
-
-                        var relatedPk = reader.GetValue(cols.PkIndex);
-                        var relatedKey = (inc.EntityType, relatedPk);
-
-                        if (!identityMap.TryGetValue(relatedKey, out var relatedObj))
+                        // --- Includes ---
+                        for (int i = 0; i < includes.Count; i++)
                         {
-                            relatedObj = MapColumns(reader, inc.EntityType, cols);
+                            var inc = includes[i];
 
-                            if (relatedObj != null)
+                            object? parentObj = inc.ParentIndex == -1 ? resolved[0] : resolved[inc.ParentIndex + 1];
+
+                            if (parentObj == null)
                             {
-                                identityMap[relatedKey] = relatedObj;
-                            }
-                        }
-
-                        object? parentObj;
-
-                        if (inc.ParentType == null)
-                        {
-                            parentObj = rootObj;
-                        }
-                        else
-                        {
-                            var parentMap = parentColumnMaps[i];
-
-                            if (parentMap == null || reader.IsDBNull(parentMap.PkIndex))
-                            {
+                                resolved[i + 1] = null;
                                 continue;
                             }
 
-                            var parentPk = reader.GetValue(parentMap.PkIndex);
-                            identityMap.TryGetValue((inc.ParentType, parentPk), out parentObj);
-                        }
-
-                        if (parentObj != null && relatedObj != null)
-                        {
-                            if (inc.IsCollection)
+                            var childIdVal = reader[$"c{i}_Id"];
+                            if (childIdVal == null || childIdVal == DBNull.Value)
                             {
-                                var wireKey = (parentObj, inc.NavigationProperty!.Name, relatedObj);
-                                if (wiredRelationships.Add(wireKey))
-                                {
-                                    inc.AddToCollection(parentObj, relatedObj);
-                                }
+                                resolved[i + 1] = null;
+                                continue;
                             }
-                            else
+
+                            if (!identityMap.TryGetValue((inc.TableType, childIdVal), out var childObj))
                             {
-                                inc.SetReference(parentObj, relatedObj);
+                                childObj = Activator.CreateInstance(inc.TableType)!;
+                                MapProperties(reader, childObj, includePropMaps[i]);
+                                identityMap[(inc.TableType, childIdVal)] = childObj;
+                            }
+
+                            resolved[i + 1] = childObj;
+
+                            var relationKey = (parentObj, i, childObj);
+                            if (!wiredRelationships.Contains(relationKey))
+                            {
+                                wiredRelationships.Add(relationKey);
+                                WireRelationship(parentObj, inc, childObj);
                             }
                         }
                     }
@@ -399,97 +389,80 @@ namespace BlackHole.DataProviders
             return rootList;
         }
 
-        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bHTransaction, List<IncludeInfo> includes)
+        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bHTransaction, List<IncludePart> includes)
         {
             var rootList = new List<TRoot>();
             var identityMap = new Dictionary<(Type, object), object>();
-            var wiredRelationships = new HashSet<(object parent, string nav, object child)>();
+            var wiredRelationships = new HashSet<(object parent, int includeIndex, object child)>();
+
+            var rootPropMap = typeof(TRoot).GetProperties()
+                .Where(p => p.PropertyType.IsAllowedType())
+                .ToDictionary(p => $"r_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase);
+
+            var includePropMaps = includes.Select((inc, i) =>
+                inc.TableType.GetProperties()
+                    .Where(p => p.PropertyType.IsAllowedType())
+                    .ToDictionary(p => $"c{i}_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase)
+            ).ToArray();
 
             SqliteConnection connection = bHTransaction.connection;
             SqliteTransaction transaction = bHTransaction._transaction;
             SqliteCommand Command = new(commandText, connection, transaction);
             ArrayToParameters(parameters, Command.Parameters); ;
 
-            using var reader = Command.ExecuteReader();
-
-            var rootColumns = BuildColumnMap(reader, typeof(TRoot), prefix: null);
-            var includeColumns = includes.Select(inc =>
-                BuildColumnMap(reader, inc.EntityType, inc.ColumnPrefix)).ToList();
-
-            var parentColumnMaps = includes.Select(inc =>
+            using (var reader = Command.ExecuteReader())
             {
-                if (inc.ParentType == null) return null;
-                return BuildColumnMap(reader, inc.ParentType, inc.ParentPkPrefix);
-            }).ToList();
-
-            while (reader.Read())
-            {
-                var rootPk = reader.GetValue(rootColumns.PkIndex);
-                var rootKey = (typeof(TRoot), rootPk);
-
-                if (!identityMap.TryGetValue(rootKey, out var rootObj))
+                while (reader.Read())
                 {
-                    rootObj = MapColumns(reader, typeof(TRoot), rootColumns);
+                    var resolved = new object?[includes.Count + 1];
 
-                    if (rootObj != null)
+                    // --- Root ---
+                    var rootIdVal = reader["r_Id"];
+                    if (rootIdVal == null || rootIdVal == DBNull.Value) continue;
+
+                    if (!identityMap.TryGetValue((typeof(TRoot), rootIdVal), out var rootObj))
                     {
-                        identityMap[rootKey] = rootObj;
+                        rootObj = Activator.CreateInstance(typeof(TRoot))!;
+                        MapProperties(reader, rootObj, rootPropMap);
+                        identityMap[(typeof(TRoot), rootIdVal)] = rootObj;
                         rootList.Add((TRoot)rootObj);
                     }
-                }
+                    resolved[0] = rootObj;
 
-                for (int i = 0; i < includes.Count; i++)
-                {
-                    var inc = includes[i];
-                    var cols = includeColumns[i];
-
-                    if (reader.IsDBNull(cols.PkIndex)) continue;
-
-                    var relatedPk = reader.GetValue(cols.PkIndex);
-                    var relatedKey = (inc.EntityType, relatedPk);
-
-                    if (!identityMap.TryGetValue(relatedKey, out var relatedObj))
+                    // --- Includes ---
+                    for (int i = 0; i < includes.Count; i++)
                     {
-                        relatedObj = MapColumns(reader, inc.EntityType, cols);
+                        var inc = includes[i];
 
-                        if (relatedObj != null)
+                        object? parentObj = inc.ParentIndex == -1 ? resolved[0] : resolved[inc.ParentIndex + 1];
+
+                        if (parentObj == null)
                         {
-                            identityMap[relatedKey] = relatedObj;
-                        }
-                    }
-
-                    object? parentObj;
-
-                    if (inc.ParentType == null)
-                    {
-                        parentObj = rootObj;
-                    }
-                    else
-                    {
-                        var parentMap = parentColumnMaps[i];
-
-                        if (parentMap == null || reader.IsDBNull(parentMap.PkIndex))
-                        {
+                            resolved[i + 1] = null;
                             continue;
                         }
 
-                        var parentPk = reader.GetValue(parentMap.PkIndex);
-                        identityMap.TryGetValue((inc.ParentType, parentPk), out parentObj);
-                    }
-
-                    if (parentObj != null && relatedObj != null)
-                    {
-                        if (inc.IsCollection)
+                        var childIdVal = reader[$"c{i}_Id"];
+                        if (childIdVal == null || childIdVal == DBNull.Value)
                         {
-                            var wireKey = (parentObj, inc.NavigationProperty!.Name, relatedObj);
-                            if (wiredRelationships.Add(wireKey))
-                            {
-                                inc.AddToCollection(parentObj, relatedObj);
-                            }
+                            resolved[i + 1] = null;
+                            continue;
                         }
-                        else
+
+                        if (!identityMap.TryGetValue((inc.TableType, childIdVal), out var childObj))
                         {
-                            inc.SetReference(parentObj, relatedObj);
+                            childObj = Activator.CreateInstance(inc.TableType)!;
+                            MapProperties(reader, childObj, includePropMaps[i]);
+                            identityMap[(inc.TableType, childIdVal)] = childObj;
+                        }
+
+                        resolved[i + 1] = childObj;
+
+                        var relationKey = (parentObj, i, childObj);
+                        if (!wiredRelationships.Contains(relationKey))
+                        {
+                            wiredRelationships.Add(relationKey);
+                            WireRelationship(parentObj, inc, childObj);
                         }
                     }
                 }
@@ -501,57 +474,95 @@ namespace BlackHole.DataProviders
 
         #region Object Mapping
 
-        private EntityColumnMap BuildColumnMap(SqliteDataReader reader, Type entityType, string? prefix)
+        private void MapProperties(SqliteDataReader reader, object obj, Dictionary<string, PropertyInfo> propMap)
         {
-            var props = entityType.GetProperties();
-            var columnIndexes = new Dictionary<PropertyInfo, int>();
-            int pkIndex = -1;
-
             for (int i = 0; i < reader.FieldCount; i++)
             {
-                string colName = reader.GetName(i);
+                if (reader.IsDBNull(i)) continue;
 
-                // If using prefixed aliases like "Customer_Id", strip the prefix
-                if (prefix != null)
+                string colName = reader.GetName(i);
+                if (!propMap.TryGetValue(colName, out var property)) continue;
+
+                Type compairType = property.PropertyType;
+
+                if (property.PropertyType.Name.Contains("Nullable"))
                 {
-                    if (!colName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
-                    colName = colName.Substring(prefix.Length);
+                    if (property.PropertyType.GenericTypeArguments?.Length > 0)
+                    {
+                        compairType = property.PropertyType.GenericTypeArguments[0];
+                    }
                 }
 
-                var prop = props.FirstOrDefault(p =>
-                    string.Equals(p.Name, colName, StringComparison.OrdinalIgnoreCase));
-
-                if (prop != null)
+                switch (compairType)
                 {
-                    columnIndexes[prop] = i;
-                    if (prop.Name == "Id") pkIndex = i; // or use [Key] attribute detection
+                    case Type t when t == typeof(Guid):
+
+                        if (reader.GetGuid(i) is Guid guidValue)
+                        {
+                            property.SetValue(obj, guidValue);
+                        }
+
+                        break;
+
+                    case Type t when t == typeof(DateTimeOffset):
+
+                        if (reader.GetString(i) is string dtovalue)
+                        {
+                            if (DateTimeOffset.TryParseExact(dtovalue, "yyyy-MM-ddTHH:mm:sszzz",
+                                CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+                            {
+                                property.SetValue(obj, result);
+                            }
+                        }
+
+                        break;
+
+                    case Type t when t == typeof(DateTime):
+
+                        if (reader.GetDateTime(i) is DateTime dtValue)
+                        {
+                            property.SetValue(obj, dtValue);
+                        }
+
+                        break;
+
+                    default:
+
+                        if (reader.GetValue(i) is object value)
+                        {
+                            property.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
+                        }
+
+                        break;
                 }
             }
-
-            return new EntityColumnMap { PkIndex = pkIndex, Columns = columnIndexes };
         }
 
-        private object? MapColumns(SqliteDataReader reader, Type type, EntityColumnMap columnMap)
+        private void WireRelationship(object parent, IncludePart inc, object child)
         {
-            object? obj = Activator.CreateInstance(type);
+            var navProp = parent.GetType().GetProperty(inc.NavigationPropertyName);
+            if (navProp == null) return;
 
-            foreach (var (property, columnIndex) in columnMap.Columns)
+            if (inc.IsList)
             {
-                if (reader.IsDBNull(columnIndex)) continue;
-
-                Type targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-
-                if (targetType == typeof(Guid))
+                var wrapper = navProp.GetValue(parent);
+                if (wrapper == null)
                 {
-                    property.SetValue(obj, reader.GetGuid(columnIndex));
+                    wrapper = Activator.CreateInstance(navProp.PropertyType)!;
+                    navProp.SetValue(parent, wrapper);
                 }
-                else
-                {
-                    property.SetValue(obj, Convert.ChangeType(reader.GetValue(columnIndex), targetType));
-                }
+                navProp.PropertyType.GetMethod("Add")!.Invoke(wrapper, new[] { child });
             }
-
-            return obj;
+            else
+            {
+                var wrapper = navProp.GetValue(parent);
+                if (wrapper == null)
+                {
+                    wrapper = Activator.CreateInstance(navProp.PropertyType)!;
+                    navProp.SetValue(parent, wrapper);
+                }
+                navProp.PropertyType.GetProperty("Value")!.SetValue(wrapper, child);
+            }
         }
 
         private T? MapObject<T>(SqliteDataReader reader)
@@ -606,26 +617,47 @@ namespace BlackHole.DataProviders
                                 }
                             }
 
-                            if (compairType == typeof(Guid))
+                            switch (compairType)
                             {
-                                if(reader.GetGuid(i) is Guid guidValue)
-                                {
-                                    type.GetProperty(property.Name)?.SetValue(obj, guidValue);
-                                }
-                            }
-                            else if(compairType == typeof(DateTime))
-                            {
-                                if(reader.GetDateTime(i) is DateTime dtValue)
-                                {
-                                    type.GetProperty(property.Name)?.SetValue(obj, dtValue);
-                                }
-                            }
-                            else
-                            {
-                                if(reader.GetValue(i) is object value)
-                                {
-                                    type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
-                                }
+                                case Type t when t == typeof(Guid):
+
+                                    if (reader.GetGuid(i) is Guid guidValue)
+                                    {
+                                        type.GetProperty(property.Name)?.SetValue(obj, guidValue);
+                                    }
+
+                                    break;
+
+                                case Type t when t == typeof(DateTimeOffset):
+
+                                    if (reader.GetString(i) is string dtovalue)
+                                    {
+                                        if (DateTimeOffset.TryParseExact(dtovalue, "yyyy-MM-ddTHH:mm:sszzz",
+                                            CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+                                        {
+                                            type.GetProperty(property.Name)?.SetValue(obj, result);
+                                        }
+                                    }
+
+                                    break;
+
+                                case Type t when t == typeof(DateTime):
+
+                                    if (reader.GetDateTime(i) is DateTime dtValue)
+                                    {
+                                        type.GetProperty(property.Name)?.SetValue(obj, dtValue);
+                                    }
+
+                                    break;   
+                                    
+                                default:
+
+                                    if (reader.GetValue(i) is object value)
+                                    {
+                                        type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
+                                    }
+
+                                    break;
                             }
                         }
                     }
@@ -649,13 +681,26 @@ namespace BlackHole.DataProviders
 
                     if (value != null)
                     {
-                        if (value.GetType() == typeof(Guid))
+                        var valueType = value?.GetType();
+
+                        switch (valueType)
                         {
-                            parameters.Add(new SqliteParameter(@param.Name, value.ToString()));
-                        }
-                        else
-                        {
-                            parameters.Add(new SqliteParameter(@param.Name, value));
+                            case Type t when t == typeof(Guid):
+                                parameters.Add(new SqliteParameter(@param.Name, value?.ToString()));
+                                break;
+                            case Type t when t == typeof(DateTimeOffset):
+                                if (value is DateTimeOffset dt)
+                                {
+                                    parameters.Add(new SqliteParameter(@param.Name, dt.ToString("yyyy-MM-ddTHH:mm:sszzz")));
+                                }
+                                else
+                                {
+                                    parameters.Add(new SqliteParameter(@param.Name, value));
+                                }
+                                break;
+                            default:
+                                parameters.Add(new SqliteParameter(@param.Name, value));
+                                break;
                         }
                     }
                     else

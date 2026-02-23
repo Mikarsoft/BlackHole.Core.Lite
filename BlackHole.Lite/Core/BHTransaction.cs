@@ -1,4 +1,5 @@
 ﻿using BlackHole.CoreSupport;
+using BlackHole.Entities;
 
 namespace BlackHole.Core
 {
@@ -37,6 +38,16 @@ namespace BlackHole.Core
         {
             DBName = databaseName;
             transaction = new BlackHoleTransaction(DBName.BuildConnectionString());
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public BHTransactEntityContext<T> For<T>() where T : BHEntity
+        {
+            return BHDataProvider.For<T>().MapEntityTransact(transaction);
         }
 
         /// <summary>

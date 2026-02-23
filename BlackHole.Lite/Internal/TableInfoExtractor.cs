@@ -1,4 +1,5 @@
-﻿using BlackHole.Entities;
+﻿using BlackHole.CoreSupport;
+using BlackHole.Entities;
 using System.Reflection;
 
 namespace BlackHole.Internal
@@ -15,7 +16,7 @@ namespace BlackHole.Internal
 
         Type TableType { get; set; }
 
-        Type FkType = typeof(ForeignKey);
+        Type FkType = typeof(ForeignKey<>);
         Type UQType = typeof(Unique);
         Type NNType = typeof(NotNullable);
         Type VCSize = typeof(VarCharSize);
@@ -75,13 +76,15 @@ namespace BlackHole.Internal
                         ReferencedTable = relation.IncludedType.Name,
                         OnDelete = relation.OnDelete.DeleteAction,
                         IsNullable = relation.OnDelete.IsNullable,
-                        PropertyName = relation.ForeignKeyPropertyName
+                        PropertyName = relation.ForeignKeyPropertyName,
+                        MapPropertyName = relation.PropertyName,
+                        BackwardsIncludeProp = relation.BackwardInclude?.PropertyName
                     });
                 }
             }
 
             PropertyInfo[] Properties = TableType.GetProperties()
-                .Where(p => IsAllowedType(p.PropertyType))
+                .Where(p => p.PropertyType.IsAllowedType())
                 .ToArray();
 
             foreach (var property in Properties)
@@ -217,20 +220,6 @@ namespace BlackHole.Internal
                 type = type.BaseType;
             }
             return null;
-        }
-
-        private readonly HashSet<Type> AllowedTypes = new()
-        {
-            typeof(int), typeof(long), typeof(short), typeof(byte),
-            typeof(bool), typeof(char), typeof(float), typeof(double),
-            typeof(decimal), typeof(string), typeof(Guid),
-            typeof(DateTime), typeof(DateTimeOffset), typeof(byte[])
-        };
-
-        bool IsAllowedType(Type type)
-        {
-            var underlying = Nullable.GetUnderlyingType(type) ?? type;
-            return AllowedTypes.Contains(underlying);
         }
     }
 }
