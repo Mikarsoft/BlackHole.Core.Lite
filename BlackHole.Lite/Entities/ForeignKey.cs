@@ -5,7 +5,7 @@ namespace BlackHole.Entities
     /// Sets Foreign Key for this Column
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class ForeignKey<T> : Attribute
+    public class ForeignKey : Attribute
     {
         /// <summary>
         /// Name of the Foreign Table
@@ -34,11 +34,12 @@ namespace BlackHole.Entities
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="table"></param>
         /// <param name="onDelete"></param>
         /// <param name="isNullable"></param>
-        public ForeignKey(OnDeleteBehavior onDelete, bool isNullable)
+        /// <exception cref="Exception"></exception>
+        public ForeignKey(Type table, OnDeleteBehavior onDelete, bool isNullable)
         {
-            Type table = typeof(T);
             TableName = table.Name;
             Column = "Id";
             Nullability = isNullable;
@@ -65,10 +66,10 @@ namespace BlackHole.Entities
         /// on the Primary Table as Id. You Can choose the Primary Table and
         /// if the Foreign Key is Nullable
         /// </summary>
+        /// <param name="table"></param>
         /// <param name="isNullable">Is this Column Nullable?</param>
-        public ForeignKey(bool isNullable)
+        public ForeignKey(Type table, bool isNullable)
         {
-            Type table = typeof(T);
             TableName = table.Name;
             Column = "Id";
             Nullability = isNullable;
@@ -90,9 +91,9 @@ namespace BlackHole.Entities
         /// on the Primary Table as Id and makes the Foreign Key Column Nullable.
         /// You Can choose the Primary Table
         /// </summary>
-        public ForeignKey()
+        /// <param name="table"></param>
+        public ForeignKey(Type table)
         {
-            Type table = typeof(T);
             TableName = table.Name;
             Column = "Id";
             CascadeInfo = "on delete set null";

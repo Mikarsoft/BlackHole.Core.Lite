@@ -40,7 +40,7 @@ namespace BlackHole.Internal
 
         internal void BuildMultipleTables(List<Type> TableTypes)
         {
-            DatabaseStatics.InitializeData = true;
+            //DatabaseStatics.InitializeData = true;
             TableCompleteInfo[] Built = new TableCompleteInfo[TableTypes.Count];
 
             for (int i = 0; i < Built.Length; i++)
@@ -96,7 +96,7 @@ namespace BlackHole.Internal
                 CreateTablesTransaction.Add(creationCommand);
             }
 
-            DatabaseStatics.InitializeData = false;
+            //DatabaseStatics.InitializeData = false;
             return entityInfo;
         }
 

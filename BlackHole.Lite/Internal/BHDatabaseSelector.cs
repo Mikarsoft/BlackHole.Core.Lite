@@ -17,7 +17,7 @@ namespace BlackHole.Internal
 
         internal string GetDatabasePath(string databaseName)
         {
-            if(string.IsNullOrEmpty(databaseName))
+            if (string.IsNullOrEmpty(databaseName))
             {
                 return Path.Combine(DatabaseStatics.DataPath, $"{DatabaseStatics.DefaultDatabaseName}.db3");
             }

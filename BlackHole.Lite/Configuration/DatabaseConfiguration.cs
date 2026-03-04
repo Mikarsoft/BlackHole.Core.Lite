@@ -13,7 +13,7 @@ namespace BlackHole.Configuration
         {
             if (string.IsNullOrEmpty(DatabaseStatics.DataPath))
             {
-                DatabaseStatics.DataPath = Path.Combine(dataPath,"BlackHoleData");
+                DatabaseStatics.DataPath = dataPath;
                 LoggerService.DeleteOldLogs();
                 LoggerService.SetUpLogger();
             }

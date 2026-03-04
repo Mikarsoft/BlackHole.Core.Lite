@@ -143,9 +143,11 @@ namespace BlackHole.Entities
         /// <typeparam name="TKey"></typeparam>
         /// <param name="foreignKey"></param>
         /// <returns></returns>
-        public BHDeleteCase HasForeignKey<TKey>(Expression<Func<T, TKey>> foreignKey) where TKey : struct
+        public BHDeleteCase HasForeignKey<TKey>(Expression<Func<T, TKey?>> foreignKey)
         {
-            bool isNullable = foreignKey.Body is UnaryExpression;
+            var propertyType = typeof(TKey);
+            bool isNullable = Nullable.GetUnderlyingType(propertyType) != null;
+
             OnDelete.IsNullable = isNullable;
             PropertyName = foreignKey.GetPropertyName();
             return OnDelete;

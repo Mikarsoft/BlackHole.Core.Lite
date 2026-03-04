@@ -16,7 +16,7 @@ namespace BlackHole.Internal
 
         Type TableType { get; set; }
 
-        Type FkType = typeof(ForeignKey<>);
+        Type FkType = typeof(ForeignKey);
         Type UQType = typeof(Unique);
         Type NNType = typeof(NotNullable);
         Type VCSize = typeof(VarCharSize);

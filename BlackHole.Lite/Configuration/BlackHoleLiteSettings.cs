@@ -6,7 +6,6 @@ namespace BlackHole.Lite.Configuration
     /// </summary>
     public class BlackHoleLiteSettings
     {
-
         internal DataPathSettings DataPath { get; set; } = new();
         internal List<DatabaseSettings> DbSettings { get; set; } = new();
 
