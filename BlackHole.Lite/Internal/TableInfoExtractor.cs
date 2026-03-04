@@ -91,12 +91,7 @@ namespace BlackHole.Internal
             {
                 object[] attributes = property.GetCustomAttributes(true);
 
-                bool mandatoryNull = false;
-
-                if (property.PropertyType.Name.Contains("Nullable"))
-                {
-                    mandatoryNull = true;
-                }
+                bool mandatoryNull = IsNullable(property);
 
                 bool nullability = mandatoryNull;
                 int size = 255;
@@ -220,6 +215,13 @@ namespace BlackHole.Internal
                 type = type.BaseType;
             }
             return null;
+        }
+
+        public bool IsNullable(PropertyInfo property)
+        {
+            var nullabilityContext = new NullabilityInfoContext();
+            var nullabilityInfo = nullabilityContext.Create(property);
+            return nullabilityInfo.WriteState == NullabilityState.Nullable;
         }
     }
 }

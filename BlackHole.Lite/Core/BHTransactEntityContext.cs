@@ -1,5 +1,4 @@
 ﻿using BlackHole.CoreSupport;
-using BlackHole.DataProviders;
 using BlackHole.Entities;
 
 namespace BlackHole.Core
@@ -9,7 +8,7 @@ namespace BlackHole.Core
     /// Data Provider's Extension methods can use it.
     /// </summary>
     /// <typeparam name="T">BlackHoleEntity</typeparam>
-    public class BHTransactEntityContext<T>
+    public class BHTransactEntityContext<T> where T : BHEntity
     {
         internal bool WithActivator { get; }
         internal string ThisTable { get; }

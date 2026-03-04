@@ -5,7 +5,10 @@ using System.Linq.Expressions;
 
 namespace BlackHole.Core
 {
-    internal static class ExecutionTransactMethods
+    /// <summary>
+    /// 
+    /// </summary>
+    public static class ExecutionTransactMethods
     {
         internal static SqliteDataProvider _dataProvider = BHDataProviderSelector.GetDataProvider();
 
