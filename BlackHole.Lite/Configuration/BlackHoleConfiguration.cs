@@ -25,7 +25,7 @@ namespace BlackHole.Configuration
 
             if (string.IsNullOrEmpty(InsideSettings.DataPath.DataPath))
             {
-                dataPath = AppDomain.CurrentDomain.BaseDirectory;
+                dataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BlackHoleData");
             }
             else
             {

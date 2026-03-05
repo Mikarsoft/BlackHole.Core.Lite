@@ -1,7 +1,6 @@
 ﻿using BlackHole.Core;
 using BlackHole.CoreSupport;
 using BlackHole.Lite.Configuration;
-using BlackHole.Logger;
 using BlackHole.Statics;
 using SQLitePCL;
 
@@ -14,8 +13,6 @@ namespace BlackHole.Configuration
             if (string.IsNullOrEmpty(DatabaseStatics.DataPath))
             {
                 DatabaseStatics.DataPath = dataPath;
-                LoggerService.DeleteOldLogs();
-                LoggerService.SetUpLogger();
             }
         }
 

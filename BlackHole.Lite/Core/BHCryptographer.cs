@@ -1,5 +1,4 @@
-﻿using BlackHole.Logger;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 namespace BlackHole.Core
@@ -97,16 +96,6 @@ namespace BlackHole.Core
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="plainText"></param>
-        /// <returns></returns>
-        public static string GenerateSHA1Hash(this string plainText)
-        {
-            return plainText.GenerateSHA1();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using BlackHole.DataProviders;
 using BlackHole.Entities;
+using BlackHole.Lite.Logger;
 using BlackHole.Statics;
 using Microsoft.Data.Sqlite;
 
@@ -7,6 +8,8 @@ namespace BlackHole.CoreSupport
 {
     internal static class BHDataProviderSelector
     {
+        internal static BHLogger _logger  = new BHLogger();
+
         internal static string BuildConnectionString(this string databaseName)
         {
             if(string.IsNullOrWhiteSpace(databaseName))

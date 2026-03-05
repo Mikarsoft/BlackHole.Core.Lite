@@ -1,5 +1,6 @@
-﻿using BlackHole.CoreSupport;
-using BlackHole.Logger;
+﻿using BlackHole.Core;
+using BlackHole.CoreSupport;
+using BlackHole.Lite.Logger;
 using BlackHole.Statics;
 using Microsoft.Data.Sqlite;
 
@@ -8,6 +9,12 @@ namespace BlackHole.Internal
     internal class BHDatabaseBuilder
     {
         private readonly BHDatabaseSelector _multiDatabaseSelector = new();
+        internal readonly BHLogger _logger;
+
+        internal BHDatabaseBuilder()
+        {
+            _logger = BHDataProviderSelector._logger;
+        }
 
         internal bool DropDatabase(string databaseName)
         {
@@ -27,7 +34,7 @@ namespace BlackHole.Internal
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString(), $"Drop {databaseName}"));
+                _logger.LogError($"Database Name: {databaseName} \n\n Error: {ex.ToString()}", $"Database_Drop");
                 return false;
             }
         }
@@ -53,7 +60,7 @@ namespace BlackHole.Internal
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString(), $"Create {databaseName}"));
+                _logger.LogError($"Database Name: {databaseName} \n\n Error: {ex.ToString()}", $"Database_Create");
                 return false;
             }
         }
@@ -75,7 +82,7 @@ namespace BlackHole.Internal
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => databaseLocation.CreateErrorLogs("DatabaseBuilder", ex.Message, ex.ToString(), $"Check {databaseName}"));
+                _logger.LogError($"Database Name: {databaseName} \n\n Error: {ex.ToString()}", $"Database_Chek");
                 return false;
             }
         }

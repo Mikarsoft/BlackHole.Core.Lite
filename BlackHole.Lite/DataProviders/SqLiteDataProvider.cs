@@ -1,11 +1,10 @@
-﻿using BlackHole.CoreSupport;
+﻿using BlackHole.Core;
+using BlackHole.CoreSupport;
 using BlackHole.Entities;
-using BlackHole.Logger;
+using BlackHole.Lite.Logger;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
 
 namespace BlackHole.DataProviders
 {
@@ -14,10 +13,13 @@ namespace BlackHole.DataProviders
         #region Constructor
         internal readonly string insertedOutput = "returning Id";
         internal readonly bool skipQuotes = true;
+        internal readonly BHLogger _logger;
 
         internal SqliteDataProvider()
         {
+            _logger = BHDataProviderSelector._logger;
         }
+
         #endregion
 
         #region Internal Processes
@@ -43,7 +45,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
+                _logger.LogError($"Connection String: {connectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Insert_{typeof(T).Name}");
                 return default;
             }
         }
@@ -66,7 +68,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bhTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), bhTransaction.connection.ConnectionString));
+                _logger.LogError($"Connection String: {bhTransaction.connection.ConnectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Insert_{typeof(T).Name}");
             }
             return default;
         }
@@ -114,7 +116,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
+                _logger.LogError($"Connection String: {connectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Insert_{typeof(T).Name}");
                 return false;
             }
         }
@@ -133,7 +135,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bhTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Insert_{typeof(T).Name}", ex.Message, ex.ToString(), bhTransaction.connection.ConnectionString));
+                _logger.LogError($"Connection String: {bhTransaction.connection.ConnectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Insert_{typeof(T).Name}");
                 return false;
             }
         }
@@ -152,7 +154,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bhTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString(), bhTransaction.connection.ConnectionString));
+                _logger.LogError($"Connection String: {bhTransaction.connection.ConnectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Execute");
                 return false;
             }
         }
@@ -173,7 +175,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Execute", ex.Message, ex.ToString(), connectionString));
+                _logger.LogError($"Connection String: {connectionString} \n Command: {commandText} \n\n Error: {ex.ToString()} \n", "Execute");
                 return false;
             }
         }
@@ -204,7 +206,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
+                _logger.LogError($"Connection String: {connectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"SelectFirst_{typeof(T).Name}");
                 return default;
             }
         }
@@ -239,7 +241,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString(), connectionString));
+                _logger.LogError($"Connection String: {connectionString} \n Command: {commandText} \n\n Error: {ex.Message}", $"Select_{typeof(T).Name}");
                 return new List<T>();
             }
         }
@@ -267,7 +269,7 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bHTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"SelectFirst_{typeof(T).Name}", ex.Message, ex.ToString(), bHTransaction.connection.ConnectionString));
+                _logger.LogError($"Connection String: {bHTransaction.connection.ConnectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"SelectFirst_{typeof(T).Name}");
                 return default;
             }
         }
@@ -299,13 +301,13 @@ namespace BlackHole.DataProviders
             catch (Exception ex)
             {
                 bHTransaction.hasError = true;
-                Task.Factory.StartNew(() => commandText.CreateErrorLogs($"Select_{typeof(T).Name}", ex.Message, ex.ToString(), bHTransaction.connection.ConnectionString));
+                _logger.LogError($"Connection String: {bHTransaction.connection.ConnectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Select_{typeof(T).Name}");
                 return new List<T>();
             }
         }
 
         public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters,
-     string connectionString, List<IncludePart> includes) where TRoot : BHEntity
+            string connectionString, List<IncludePart> includes) where TRoot : BHEntity
         {
             var rootList = new List<TRoot>();
             var identityMap = new Dictionary<(Type, object), object>();
@@ -321,13 +323,106 @@ namespace BlackHole.DataProviders
                     .ToDictionary(p => $"c{i}_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase)
             ).ToArray();
 
-            using (SqliteConnection connection = new(connectionString))
+            try
             {
-                connection.Open();
-                SqliteCommand command = new(commandText, connection);
-                ArrayToParameters(parameters, command.Parameters);
+                using (SqliteConnection connection = new(connectionString))
+                {
+                    connection.Open();
+                    SqliteCommand command = new(commandText, connection);
+                    ArrayToParameters(parameters, command.Parameters);
 
-                using (var reader = command.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var resolved = new object?[includes.Count + 1];
+
+                            // --- Root ---
+                            var rootIdVal = reader["r_Id"];
+                            if (rootIdVal == null || rootIdVal == DBNull.Value) continue;
+
+                            if (!identityMap.TryGetValue((typeof(TRoot), rootIdVal), out var rootObj))
+                            {
+                                rootObj = Activator.CreateInstance(typeof(TRoot))!;
+                                MapProperties(reader, rootObj, rootPropMap);
+                                identityMap[(typeof(TRoot), rootIdVal)] = rootObj;
+                                rootList.Add((TRoot)rootObj);
+                            }
+                            resolved[0] = rootObj;
+
+                            // --- Includes ---
+                            for (int i = 0; i < includes.Count; i++)
+                            {
+                                var inc = includes[i];
+
+                                object? parentObj = inc.ParentIndex == -1 ? resolved[0] : resolved[inc.ParentIndex + 1];
+
+                                if (parentObj == null)
+                                {
+                                    resolved[i + 1] = null;
+                                    continue;
+                                }
+
+                                var childIdVal = reader[$"c{i}_Id"];
+                                if (childIdVal == null || childIdVal == DBNull.Value)
+                                {
+                                    resolved[i + 1] = null;
+                                    continue;
+                                }
+
+                                if (!identityMap.TryGetValue((inc.TableType, childIdVal), out var childObj))
+                                {
+                                    childObj = Activator.CreateInstance(inc.TableType)!;
+                                    MapProperties(reader, childObj, includePropMaps[i]);
+                                    identityMap[(inc.TableType, childIdVal)] = childObj;
+                                }
+
+                                resolved[i + 1] = childObj;
+
+                                var relationKey = (parentObj, i, childObj);
+                                if (!wiredRelationships.Contains(relationKey))
+                                {
+                                    wiredRelationships.Add(relationKey);
+                                    WireRelationship(parentObj, inc, childObj);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Connection String: {connectionString} \n Command: {commandText} \n\n Error: {ex.ToString()}", $"Include_Query_{typeof(TRoot).Name}");
+            }
+
+            return rootList;
+        }
+
+        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters,
+            BlackHoleTransaction bHTransaction, List<IncludePart> includes)
+        {
+            var rootList = new List<TRoot>();
+            var identityMap = new Dictionary<(Type, object), object>();
+            var wiredRelationships = new HashSet<(object parent, int includeIndex, object child)>();
+
+            var rootPropMap = typeof(TRoot).GetProperties()
+                .Where(p => p.PropertyType.IsAllowedType())
+                .ToDictionary(p => $"r_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase);
+
+            var includePropMaps = includes.Select((inc, i) =>
+                inc.TableType.GetProperties()
+                    .Where(p => p.PropertyType.IsAllowedType())
+                    .ToDictionary(p => $"c{i}_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase)
+            ).ToArray();
+
+            try
+            {
+                SqliteConnection connection = bHTransaction.connection;
+                SqliteTransaction transaction = bHTransaction._transaction;
+                SqliteCommand Command = new(commandText, connection, transaction);
+                ArrayToParameters(parameters, Command.Parameters); ;
+
+                using (var reader = Command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
@@ -385,87 +480,9 @@ namespace BlackHole.DataProviders
                     }
                 }
             }
-
-            return rootList;
-        }
-
-        public List<TRoot> QueryWithIncludes<TRoot>(string commandText, List<BlackHoleParameter>? parameters, BlackHoleTransaction bHTransaction, List<IncludePart> includes)
-        {
-            var rootList = new List<TRoot>();
-            var identityMap = new Dictionary<(Type, object), object>();
-            var wiredRelationships = new HashSet<(object parent, int includeIndex, object child)>();
-
-            var rootPropMap = typeof(TRoot).GetProperties()
-                .Where(p => p.PropertyType.IsAllowedType())
-                .ToDictionary(p => $"r_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase);
-
-            var includePropMaps = includes.Select((inc, i) =>
-                inc.TableType.GetProperties()
-                    .Where(p => p.PropertyType.IsAllowedType())
-                    .ToDictionary(p => $"c{i}_{p.Name}", p => p, StringComparer.OrdinalIgnoreCase)
-            ).ToArray();
-
-            SqliteConnection connection = bHTransaction.connection;
-            SqliteTransaction transaction = bHTransaction._transaction;
-            SqliteCommand Command = new(commandText, connection, transaction);
-            ArrayToParameters(parameters, Command.Parameters); ;
-
-            using (var reader = Command.ExecuteReader())
+            catch( Exception ex )
             {
-                while (reader.Read())
-                {
-                    var resolved = new object?[includes.Count + 1];
-
-                    // --- Root ---
-                    var rootIdVal = reader["r_Id"];
-                    if (rootIdVal == null || rootIdVal == DBNull.Value) continue;
-
-                    if (!identityMap.TryGetValue((typeof(TRoot), rootIdVal), out var rootObj))
-                    {
-                        rootObj = Activator.CreateInstance(typeof(TRoot))!;
-                        MapProperties(reader, rootObj, rootPropMap);
-                        identityMap[(typeof(TRoot), rootIdVal)] = rootObj;
-                        rootList.Add((TRoot)rootObj);
-                    }
-                    resolved[0] = rootObj;
-
-                    // --- Includes ---
-                    for (int i = 0; i < includes.Count; i++)
-                    {
-                        var inc = includes[i];
-
-                        object? parentObj = inc.ParentIndex == -1 ? resolved[0] : resolved[inc.ParentIndex + 1];
-
-                        if (parentObj == null)
-                        {
-                            resolved[i + 1] = null;
-                            continue;
-                        }
-
-                        var childIdVal = reader[$"c{i}_Id"];
-                        if (childIdVal == null || childIdVal == DBNull.Value)
-                        {
-                            resolved[i + 1] = null;
-                            continue;
-                        }
-
-                        if (!identityMap.TryGetValue((inc.TableType, childIdVal), out var childObj))
-                        {
-                            childObj = Activator.CreateInstance(inc.TableType)!;
-                            MapProperties(reader, childObj, includePropMaps[i]);
-                            identityMap[(inc.TableType, childIdVal)] = childObj;
-                        }
-
-                        resolved[i + 1] = childObj;
-
-                        var relationKey = (parentObj, i, childObj);
-                        if (!wiredRelationships.Contains(relationKey))
-                        {
-                            wiredRelationships.Add(relationKey);
-                            WireRelationship(parentObj, inc, childObj);
-                        }
-                    }
-                }
+                _logger.LogError($"Connection String: {bHTransaction.connection.ConnectionString} \n Command: {commandText} \n\n Error: {ex.Message}", $"Include_Query{typeof(TRoot).Name}");
             }
 
             return rootList;
@@ -666,7 +683,7 @@ namespace BlackHole.DataProviders
             }
             catch (Exception ex)
             {
-                Task.Factory.StartNew(() => ex.Message.CreateErrorLogs($"Object_Mapping_{typeof(T).Name}", "MapperError", ex.ToString(), "Mapper"));
+                _logger.LogError($"Error: {ex.ToString()}", $"Object_Mapping_{typeof(T).Name}");
                 return default;
             }
         }
