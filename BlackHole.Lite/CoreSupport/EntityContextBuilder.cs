@@ -28,10 +28,16 @@ namespace BlackHole.CoreSupport
                         }
                     }
 
+                    string propNames = sb.PNSb.ToString();
+                    string paramNames = sb.PPSb.ToString();
+                    string updateNames = sb.UPSb.ToString();
+
+                    string propNamesFinal = propNames.Length > 1 ? $"{propNames.Remove(0,1)} " : string.Empty;
+                    string paramNamesFinal = paramNames.Length > 1 ? $"{paramNames.Remove(0, 1)} " : string.Empty;
+                    string updateNamesFinal = updateNames.Length > 1 ? $"{updateNames.Remove(0, 1)} " : string.Empty;
+
                     BHDataProvider.EntitiesContext.Add(new(tableInfo.TableType, tableInfo.TableType.CheckActivator(),
-                        tableInfo.TableType.Name, Columns, $"{sb.PNSb.ToString().Remove(0, 1)} ",
-                        $"{sb.PPSb.ToString().Remove(0, 1)} ",
-                        $"{sb.UPSb.ToString().Remove(0, 1)} "));
+                        tableInfo.TableType.Name, Columns, propNamesFinal, paramNamesFinal, updateNamesFinal));
                 }
 
                 foreach(var fk in tableInfo.ForeignKeys)

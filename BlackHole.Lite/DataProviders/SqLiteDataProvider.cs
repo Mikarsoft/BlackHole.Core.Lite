@@ -77,7 +77,7 @@ namespace BlackHole.DataProviders
         #region Execution Methods
         public int InsertScalar<T>(string commandStart, string commandEnd, T entry, string connectionString)
         {
-            return ExecuteEntryScalar($"{commandStart}){commandEnd}) {insertedOutput};", entry, connectionString);
+            return ExecuteEntryScalar($"{commandStart}) {commandEnd}) {insertedOutput};", entry, connectionString);
         }
 
         public int InsertScalar<T>(string commandStart, string commandEnd, T entry, BlackHoleTransaction bhTransaction)

@@ -350,7 +350,25 @@ namespace BlackHole.Internal
                 nulText = $"default {defaultVal} {nulText}";
             }
 
-            switch (propTypeName)
+            Type propBaseType;
+
+            if (propTypeName.Contains("Nullable"))
+            {
+                if (entityColumn.PropertyType.GenericTypeArguments != null && entityColumn.PropertyType.GenericTypeArguments.Length > 0)
+                {
+                    propBaseType = entityColumn.PropertyType.GenericTypeArguments[0];
+                }
+                else
+                {
+                    propBaseType = entityColumn.PropertyType;
+                }
+            }
+            else
+            {
+                propBaseType = entityColumn.PropertyType;
+            }
+
+            switch (propBaseType.Name)
             {
                 case "String":
                     dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[0]}({entityColumn.Size}) {nulText}";
@@ -390,6 +408,9 @@ namespace BlackHole.Internal
                     break;
                 case "Byte[]":
                     dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[11]} {nulText}";
+                    break;
+                case "Byte":
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[2]} {nulText}";
                     break;
                 default:
                     throw ProtectDbAndThrow($"Unsupported property type '{entityColumn.PropertyType.FullName}' at Property '{entityColumn.PropertyName}' of Entity '{tableName}'");

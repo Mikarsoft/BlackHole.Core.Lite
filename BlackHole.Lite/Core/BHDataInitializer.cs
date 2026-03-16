@@ -38,7 +38,7 @@ namespace BlackHole.Core
         /// <returns>Entity Context</returns>
         public BHEntityContext<T> For<T>() where T : BHEntity
         {
-            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DatabaseName);
+            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(DatabaseName.BuildConnectionString());
         }
 
         /// <summary>
