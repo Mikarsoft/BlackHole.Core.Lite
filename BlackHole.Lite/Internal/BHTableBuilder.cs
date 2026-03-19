@@ -410,7 +410,7 @@ namespace BlackHole.Internal
                     dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[11]} {nulText}";
                     break;
                 case "Byte":
-                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[2]} {nulText}";
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[13]} {nulText}";
                     break;
                 default:
                     throw ProtectDbAndThrow($"Unsupported property type '{entityColumn.PropertyType.FullName}' at Property '{entityColumn.PropertyName}' of Entity '{tableName}'");

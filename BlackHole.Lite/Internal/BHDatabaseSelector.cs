@@ -27,7 +27,7 @@ namespace BlackHole.Internal
 
         internal string[] SqlDatatypesTranslation()
         {
-            return new[] { "varchar", "char", "int2", "integer", "bigint", "decimal", "float", "numeric", "varchar(36)", "boolean", "datetime", "blob", "text(25)" };
+            return new[] { "varchar", "char", "int2", "integer", "bigint", "decimal", "float", "numeric", "varchar(36)", "boolean", "datetime", "blob", "text(25)", "tinyint" };
         }
     }
 }
