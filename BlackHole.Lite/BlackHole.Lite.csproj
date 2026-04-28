@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>BlackHole.Lite</Title>
-    <AssemblyVersion>0.9.1</AssemblyVersion>
-    <FileVersion>0.9.1</FileVersion>
-    <Version>0.9.1</Version>
+    <AssemblyVersion>0.9.4</AssemblyVersion>
+    <FileVersion>0.9.4</FileVersion>
+    <Version>0.9.4-d</Version>
     <Copyright>Mikarsoft Ltd</Copyright>
     <PackageProjectUrl>https://mikarsoft.com</PackageProjectUrl>
     <PackageIcon>bhunity.png</PackageIcon>
@@ -19,10 +19,13 @@
 	<RepositoryType>git</RepositoryType>
 	<Description>A Simple version of BlackHole.Core.ORM, that works with SQLite only.</Description>
 	<PackageTags>orm;sqlite;blackhole;easy;fast;object;relational;mapper;sql;lite</PackageTags>
-	<PackageReleaseNotes>- dotnet7 preview package
+	<PackageReleaseNotes>- dotnet8 stable
 - added multiple sqlite databases support
+- added navigation properties (like Ef Core)
 - fixed linq bugs for null values and booleans
-- added 'any' and 'count' sql methods</PackageReleaseNotes>
+- added 'any' and 'count' sql methods
+ -- work in progress for more features until the final release (Order by, Group by, Select etc..) --
+	</PackageReleaseNotes>
 	<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	<PackageId>BlackHole.Core.Lite</PackageId>
@@ -42,7 +45,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.24" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.11" />
   </ItemGroup>
 
   <ItemGroup>

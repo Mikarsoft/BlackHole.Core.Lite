@@ -311,7 +311,7 @@ namespace BlackHole.DataProviders
         {
             var rootList = new List<TRoot>();
             var identityMap = new Dictionary<(Type, object), object>();
-            var wiredRelationships = new HashSet<(object parent, int includeIndex, object child)>();
+            var wiredRelationships = new HashSet<(object parent, string navProp, object child)>();
 
             var rootPropMap = typeof(TRoot).GetProperties()
                 .Where(p => p.PropertyType.IsAllowedType())
@@ -379,7 +379,7 @@ namespace BlackHole.DataProviders
 
                                 resolved[i + 1] = childObj;
 
-                                var relationKey = (parentObj, i, childObj);
+                                var relationKey = (parentObj, inc.NavigationPropertyName, childObj);
                                 if (!wiredRelationships.Contains(relationKey))
                                 {
                                     wiredRelationships.Add(relationKey);
@@ -403,7 +403,7 @@ namespace BlackHole.DataProviders
         {
             var rootList = new List<TRoot>();
             var identityMap = new Dictionary<(Type, object), object>();
-            var wiredRelationships = new HashSet<(object parent, int includeIndex, object child)>();
+            var wiredRelationships = new HashSet<(object parent, string navProp, object child)>();
 
             var rootPropMap = typeof(TRoot).GetProperties()
                 .Where(p => p.PropertyType.IsAllowedType())
@@ -470,7 +470,7 @@ namespace BlackHole.DataProviders
 
                             resolved[i + 1] = childObj;
 
-                            var relationKey = (parentObj, i, childObj);
+                            var relationKey = (parentObj, inc.NavigationPropertyName, childObj);
                             if (!wiredRelationships.Contains(relationKey))
                             {
                                 wiredRelationships.Add(relationKey);
@@ -547,7 +547,7 @@ namespace BlackHole.DataProviders
 
                         if (reader.GetValue(i) is object value)
                         {
-                            property.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
+                            property.SetValue(obj, Convert.ChangeType(value, compairType));
                         }
 
                         break;
