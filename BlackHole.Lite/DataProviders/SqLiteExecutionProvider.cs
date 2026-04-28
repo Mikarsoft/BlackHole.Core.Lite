@@ -296,7 +296,7 @@ namespace BlackHole.DataProviders
                         {
                             Type compairType = property.PropertyType;
 
-                            if (property.Name.Contains("Nullable"))
+                            if (property.PropertyType.Name.Contains("Nullable"))
                             {
                                 if (property.PropertyType.GenericTypeArguments != null && property.PropertyType.GenericTypeArguments.Length > 0)
                                 {
@@ -310,7 +310,7 @@ namespace BlackHole.DataProviders
                             }
                             else
                             {
-                                type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(reader.GetValue(i), property.PropertyType));
+                                type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(reader.GetValue(i), compairType));
                             }
                         }
                     }

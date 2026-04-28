@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>BlackHole.Lite</Title>
-    <AssemblyVersion>0.9.5</AssemblyVersion>
-    <FileVersion>0.9.5</FileVersion>
-    <Version>0.9.5-d</Version>
+    <AssemblyVersion>0.9.6</AssemblyVersion>
+    <FileVersion>0.9.6</FileVersion>
+    <Version>0.9.6-d</Version>
     <Copyright>Mikarsoft Ltd</Copyright>
     <PackageProjectUrl>https://mikarsoft.com</PackageProjectUrl>
     <PackageIcon>bhunity.png</PackageIcon>
