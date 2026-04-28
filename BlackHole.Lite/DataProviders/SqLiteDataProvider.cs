@@ -671,7 +671,7 @@ namespace BlackHole.DataProviders
 
                                     if (reader.GetValue(i) is object value)
                                     {
-                                        type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
+                                        type.GetProperty(property.Name)?.SetValue(obj, Convert.ChangeType(value, compairType));
                                     }
 
                                     break;
