@@ -385,6 +385,15 @@ namespace BlackHole.Internal
                 case "Int64":
                     dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[4]} {nulText}";
                     break;
+                case "UInt16":
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[15]} {nulText}";
+                    break;
+                case "UInt32":
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[14]} {nulText}";
+                    break;
+                case "UInt64":
+                    dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[14]} {nulText}";
+                    break;
                 case "Decimal":
                     dataCommand = $"{entityColumn.PropertyName} {SqlDatatypes[5]} {nulText}";
                     break;
@@ -426,12 +435,16 @@ namespace BlackHole.Internal
                 "Char" => "'-'",
                 "Int16" => "0",
                 "Int32" => "0",
+                "UInt32" => "0",
+                "UInt64" => "0",
+                "UInt16" => "0",
                 "Int64" => "0",
                 "Decimal" => "0",
                 "Single" => "0",
                 "Double" => "0",
                 "Guid" => $"'{Guid.Empty}'",
                 "Boolean" => "0",
+                "Byte" => "0",
                 "DateTime" => $"'{new DateTime(1970, 1, 1).ToString(DatabaseStatics.DbDateFormat)}'",
                 "DateTimeOffset" => $"'{new DateTimeOffset(1970, 1, 1, 0, 0, 0, new(0,0,0)).ToString(DatabaseStatics.DbDateFormat)}'",
                 "Byte[]" => $"'{new byte[0]}'",

@@ -62,7 +62,7 @@ namespace BlackHole.CoreSupport
         {
             typeof(int), typeof(long), typeof(short), typeof(byte),
             typeof(bool), typeof(char), typeof(float), typeof(double),
-            typeof(decimal), typeof(string), typeof(Guid),
+            typeof(decimal), typeof(string), typeof(Guid),typeof(ushort), typeof(uint),
             typeof(DateTime), typeof(DateTimeOffset), typeof(byte[])
         };
 

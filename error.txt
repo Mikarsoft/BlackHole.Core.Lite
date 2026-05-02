@@ -1,0 +1,8 @@
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]: Unhandled exception. System.Exception: Unsupported property type 'System.Byte' at Property 'SlaveId' of Entity 'Signals'
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at BlackHole.Internal.BHTableBuilder.GetDefaultValue(Type PropertyType, String PropName, String TableName)
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at BlackHole.Internal.BHTableBuilder.GetDatatypeCommand(ColumnInfo entityColumn, ColumnInfo dbColumn, String tableName, Boolean firstTime)
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at BlackHole.Internal.BHTableBuilder.ForeignKeyLiteAssignment(TableCompleteInfo entityInfo)
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at BlackHole.Internal.BHTableBuilder.BuildMultipleTables(List`1 TableTypes)
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at BlackHole.Configuration.BlackHoleConfiguration.BuildDatabases(BlackHoleLiteSettings settings, Assembly callingAssembly)
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at BlackHole.Configuration.BlackHoleConfiguration.SuperNova(Action`1 settings)
+May 03 01:23:10 vmi3210751 Enerthium.Platform[990305]:    at Program.<Main>$(String[] args) in /workspace/enerthium/enerthium_admin/Enerthium.System/Enerthium.Platform/Program.cs:line 43
