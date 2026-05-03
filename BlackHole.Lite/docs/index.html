@@ -61,22 +61,11 @@
     font-size: 17px;
   }
   .brand .logo {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #8b5cf6, #1a0033 70%);
-    box-shadow: 0 0 16px rgba(139,92,246,.6), inset 0 0 8px rgba(0,0,0,.4);
-    position: relative;
+    width: 32px; height: 32px;
+    object-fit: contain;
     flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(220, 20, 60, .25));
   }
-  .brand .logo::after {
-    content: "";
-    position: absolute;
-    inset: -3px;
-    border-radius: 50%;
-    border: 1px solid rgba(139,92,246,.3);
-    animation: orbit 6s linear infinite;
-  }
-  @keyframes orbit { to { transform: rotate(360deg); } }
   .brand .ver {
     font-size: 11px;
     font-weight: 500;
@@ -370,7 +359,7 @@
 
 <header class="topbar">
   <a class="brand" href="#top">
-    <span class="logo"></span>
+    <img class="logo" src="bhunity.png" alt="BlackHole.Lite logo">
     <span>BlackHole.Lite</span>
     <span class="ver">v8.0.0</span>
   </a>

@@ -10,7 +10,7 @@
     <FileVersion>8.0.0</FileVersion>
     <Version>8.0.0</Version>
     <Copyright>Mikarsoft Ltd</Copyright>
-    <PackageProjectUrl>https://mikarsoft.com</PackageProjectUrl>
+    <PackageProjectUrl>https://mikarsoft.com/docs/blackhole-lite/</PackageProjectUrl>
     <PackageIcon>bhunity.png</PackageIcon>
 	<PackageOutputPath>../nupkg</PackageOutputPath>
 	<NeutralLanguage>en</NeutralLanguage>
