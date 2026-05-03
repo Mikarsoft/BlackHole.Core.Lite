@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>BlackHole.Lite</Title>
-    <AssemblyVersion>0.9.8</AssemblyVersion>
-    <FileVersion>0.9.8</FileVersion>
-    <Version>0.9.8-d</Version>
+    <AssemblyVersion>8.0.0</AssemblyVersion>
+    <FileVersion>8.0.0</FileVersion>
+    <Version>8.0.0</Version>
     <Copyright>Mikarsoft Ltd</Copyright>
     <PackageProjectUrl>https://mikarsoft.com</PackageProjectUrl>
     <PackageIcon>bhunity.png</PackageIcon>
@@ -17,17 +17,21 @@
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<RepositoryUrl>https://github.com/Mikarsoft/BlackHole.Core.Lite</RepositoryUrl>
 	<RepositoryType>git</RepositoryType>
-	<Description>A Simple version of BlackHole.Core.ORM, that works with SQLite only.</Description>
-	<PackageTags>orm;sqlite;blackhole;easy;fast;object;relational;mapper;sql;lite</PackageTags>
-	<PackageReleaseNotes>- dotnet8 stable
-- Documentation is Coming when the Library is completely stable and checked
-- added support for uint, ushort, DateTimeOffset, byte, 
-- fixed Include Functionality and Invalid Cast Exception
-- added multiple sqlite databases support
-- added navigation properties (like Ef Core)
-- fixed linq bugs for null values and booleans
-- added 'any' and 'count' sql methods
- -- work in progress for more features until the final release (Order by, Group by, Select etc..) --
+	<Description>A fast, code-first ORM for SQLite. Entity Framework-style productivity without a DbContext: define your entities, call SuperNova once at startup, and the database creates and migrates itself. Supports navigation properties, fluent relationships, joins, transactions, raw SQL, multi-database setups, and soft delete.</Description>
+	<PackageTags>orm;sqlite;blackhole;easy;fast;object;relational;mapper;sql;lite;code-first;migrations;dbcontext-free;ef-alternative</PackageTags>
+	<PackageReleaseNotes>BlackHole.Lite 8.0.0 — first official release.
+
+- Stable public API with full XML documentation.
+- Automatic database creation and schema migration.
+- Fluent relationships: HasOne / WithOne / WithMany / HasForeignKey / OnDelete.
+- Eager loading with Include and ThenInclude.
+- Inner / Left / Right / Outer joins with DTO projections.
+- Stored views (IBHInitialViews) and seed data (IBHInitialData).
+- Transactions via BHTransaction.
+- Raw SQL escape hatch via BHConnection.
+- Multi-database support routed by namespace.
+- Soft delete via [UseActivator].
+- Supported types: int, uint, short, ushort, long, ulong, byte, bool, float, double, decimal, string, Guid, DateTime, DateTimeOffset, and nullable variants.
 	</PackageReleaseNotes>
 	<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>

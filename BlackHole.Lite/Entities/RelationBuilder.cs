@@ -4,7 +4,7 @@ namespace BlackHole.Entities
 {
     /// <summary>
     /// Fluent builder for configuring entity relationships, foreign keys, and indexes.
-    /// Used within <see cref="BHEntity{T}.Congifure(RelationBuilder{T})"/> to define database constraints.
+    /// Used within <see cref="BHEntity{T}.Configure(RelationBuilder{T})"/> to define database constraints.
     /// </summary>
     /// <typeparam name="T">The entity type being configured. Must derive from <see cref="BHEntity"/>.</typeparam>
     /// <remarks>

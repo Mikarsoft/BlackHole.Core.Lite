@@ -3,11 +3,11 @@ namespace BlackHole.Entities
 {
     /// <summary>
     /// Base class for all BlackHole entities that supports fluent relationship configuration.
-    /// Derives from <see cref="BHEntity"/> and provides an entry point for defining relationships via the <see cref="Congifure(RelationBuilder{T})"/> method.
+    /// Derives from <see cref="BHEntity"/> and provides an entry point for defining relationships via the <see cref="Configure(RelationBuilder{T})"/> method.
     /// </summary>
     /// <typeparam name="T">The entity type inheriting from this class. Must implement BHEntity&lt;T&gt;.</typeparam>
     /// <remarks>
-    /// The <see cref="Congifure(RelationBuilder{T})"/> method is called automatically during database initialization
+    /// The <see cref="Configure(RelationBuilder{T})"/> method is called automatically during database initialization
     /// to configure navigation properties, foreign keys, and indexes using a fluent API similar to Entity Framework.
     /// </remarks>
     /// <example>
@@ -17,7 +17,7 @@ namespace BlackHole.Entities
     ///     public string Name { get; set; }
     ///     public BHIncludeList&lt;Order&gt; Orders { get; set; }
     ///
-    ///     public override void Congifure(RelationBuilder&lt;User&gt; modelBuilder)
+    ///     public override void Configure(RelationBuilder&lt;User&gt; modelBuilder)
     ///     {
     ///         modelBuilder.HasOne(x => x.Orders)
     ///             .WithMany(x => x.User);
@@ -30,14 +30,14 @@ namespace BlackHole.Entities
         /// <summary>
         /// Configures relationships, foreign keys, and indexes for this entity.
         /// This method is invoked automatically during database table initialization.
-        /// Note: The method name contains a typo and is spelled "Congifure" in the API.
+        /// Note: The method name contains a typo and is spelled "Configure" in the API.
         /// </summary>
         /// <param name="modelBuilder">The <see cref="RelationBuilder{T}"/> used to configure relationships and constraints.</param>
         /// <remarks>
         /// Use this method to declare one-to-one and one-to-many relationships, set foreign key behavior (cascade, restrict, set null),
         /// and configure indexes on entity properties.
         /// </remarks>
-        public abstract void Congifure(RelationBuilder<T> modelBuilder);
+        public abstract void Configure(RelationBuilder<T> modelBuilder);
 
     }
 

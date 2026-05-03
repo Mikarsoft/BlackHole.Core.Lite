@@ -17,7 +17,7 @@
     /// {
     ///     public string Name { get; set; }
     ///
-    ///     public override void Congifure(RelationBuilder&lt;Customer&gt; modelBuilder)
+    ///     public override void Configure(RelationBuilder&lt;Customer&gt; modelBuilder)
     ///     {
     ///     }
     /// }

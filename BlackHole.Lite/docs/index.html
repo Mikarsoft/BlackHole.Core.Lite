@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackHole.Lite — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f7f8fb;
+    --bg-sidebar: #fafbfd;
+    --text: #1c1e21;
+    --text-muted: #5b6575;
+    --heading: #0d1117;
+    --border: #e6e8ec;
+    --border-soft: #eef0f4;
+    --accent: #6d4cff;
+    --accent-soft: #efebff;
+    --accent-hover: #5837ff;
+    --code-bg: #1a1b26;
+    --inline-code-bg: #f1f1f5;
+    --inline-code-text: #5837ff;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.04);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Header ===== */
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--heading);
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .brand .logo {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #8b5cf6, #1a0033 70%);
+    box-shadow: 0 0 16px rgba(139,92,246,.6), inset 0 0 8px rgba(0,0,0,.4);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .brand .logo::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid rgba(139,92,246,.3);
+    animation: orbit 6s linear infinite;
+  }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  .brand .ver {
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
+  .topbar nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .topbar nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color .15s;
+  }
+  .topbar nav a:hover { color: var(--heading); }
+  .topbar nav a.cta {
+    background: var(--heading);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+  .topbar nav a.cta:hover { background: #000; color: #fff; }
+
+  /* ===== Layout ===== */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr) 220px;
+    gap: 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ===== Sidebar ===== */
+  aside.sidebar {
+    border-right: 1px solid var(--border-soft);
+    padding: 32px 24px 60px 28px;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    background: var(--bg-sidebar);
+  }
+  .sidebar h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    margin: 24px 0 8px;
+    font-weight: 600;
+  }
+  .sidebar h4:first-child { margin-top: 0; }
+  .sidebar ul { list-style: none; padding: 0; margin: 0; }
+  .sidebar li a {
+    display: block;
+    padding: 6px 12px;
+    margin: 1px 0;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+    transition: all .12s;
+  }
+  .sidebar li a:hover { background: var(--bg-soft); color: var(--accent); }
+  .sidebar li a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ===== Main content ===== */
+  main {
+    padding: 48px 56px 120px;
+    min-width: 0;
+  }
+  .hero {
+    margin-bottom: 56px;
+  }
+  .hero .eyebrow {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .hero h1 {
+    font-size: 44px;
+    line-height: 1.1;
+    margin: 8px 0 16px;
+    letter-spacing: -.02em;
+    color: var(--heading);
+  }
+  .hero p.lead {
+    font-size: 18px;
+    color: var(--text-muted);
+    max-width: 720px;
+    margin: 0;
+  }
+  .hero .badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .badge.purple { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+  section.doc {
+    margin: 0 0 64px;
+    scroll-margin-top: 80px;
+  }
+  section.doc > h2 {
+    font-size: 30px;
+    color: var(--heading);
+    margin: 0 0 8px;
+    letter-spacing: -.01em;
+    padding-top: 16px;
+  }
+  section.doc > h3 {
+    font-size: 19px;
+    color: var(--heading);
+    margin: 36px 0 8px;
+    scroll-margin-top: 80px;
+  }
+  section.doc p { margin: 12px 0 16px; }
+  section.doc ul { padding-left: 22px; }
+  section.doc li { margin: 6px 0; }
+  section.doc a { color: var(--accent); text-decoration: none; }
+  section.doc a:hover { text-decoration: underline; }
+  section.doc strong { color: var(--heading); font-weight: 600; }
+  hr.divider {
+    border: 0;
+    border-top: 1px solid var(--border-soft);
+    margin: 0;
+  }
+
+  /* ===== Code ===== */
+  code:not([class*="language-"]) {
+    background: var(--inline-code-bg);
+    color: var(--inline-code-text);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .88em;
+    font-weight: 500;
+  }
+  pre[class*="language-"] {
+    background: var(--code-bg) !important;
+    border-radius: 10px;
+    padding: 18px 20px !important;
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    margin: 16px 0 24px;
+    position: relative;
+  }
+  .code-wrapper { position: relative; }
+  .code-wrapper .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    color: #c0c4cc;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    opacity: 0;
+    transition: all .15s;
+    z-index: 5;
+  }
+  .code-wrapper:hover .copy-btn { opacity: 1; }
+  .code-wrapper .copy-btn:hover { background: rgba(255,255,255,.16); color: #fff; }
+  .code-wrapper .copy-btn.copied { color: #4ade80; }
+
+  /* ===== Callouts ===== */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .callout.warn { border-color: #f59e0b; background: #fff8e6; }
+  .callout.note { border-color: #6366f1; background: #eef0ff; }
+  .callout strong { display: block; margin-bottom: 4px; color: var(--heading); }
+
+  /* ===== Tables ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  th {
+    background: var(--bg-soft);
+    font-weight: 600;
+    color: var(--heading);
+    font-size: 13px;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td code:not([class*="language-"]) { white-space: nowrap; }
+
+  /* ===== TOC right sidebar ===== */
+  aside.toc {
+    border-left: 1px solid var(--border-soft);
+    padding: 48px 20px 60px 28px;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    font-size: 13px;
+  }
+  .toc h5 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .toc ul { list-style: none; padding: 0; margin: 0; }
+  .toc li a {
+    display: block;
+    padding: 4px 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    line-height: 1.4;
+  }
+  .toc li a:hover { color: var(--accent); }
+  .toc li a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+
+  /* ===== Footer ===== */
+  footer {
+    border-top: 1px solid var(--border-soft);
+    padding: 24px 56px;
+    color: var(--text-muted);
+    font-size: 13px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ===== Mobile ===== */
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 240px minmax(0,1fr); }
+    aside.toc { display: none; }
+  }
+  @media (max-width: 720px) {
+    .layout { grid-template-columns: 1fr; }
+    aside.sidebar { display: none; }
+    main { padding: 32px 20px 80px; }
+    .hero h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#top">
+    <span class="logo"></span>
+    <span>BlackHole.Lite</span>
+    <span class="ver">v8.0.0</span>
+  </a>
+  <nav>
+    <a href="#getting-started">Docs</a>
+    <a href="https://www.nuget.org/packages/BlackHole.Core.Lite" target="_blank">NuGet</a>
+    <a href="https://github.com/Mikarsoft/BlackHole.Core.Lite" target="_blank" class="cta">GitHub →</a>
+  </nav>
+</header>
+
+<div class="layout" id="top">
+
+  <aside class="sidebar">
+    <h4>Introduction</h4>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#installation">Installation</a></li>
+      <li><a href="#getting-started">Getting Started</a></li>
+    </ul>
+
+    <h4>Entities</h4>
+    <ul>
+      <li><a href="#defining-entities">Defining Entities</a></li>
+      <li><a href="#attributes">Attributes</a></li>
+      <li><a href="#relationships">Relationships</a></li>
+      <li><a href="#indexes">Indexes</a></li>
+    </ul>
+
+    <h4>Working with Data</h4>
+    <ul>
+      <li><a href="#crud">CRUD Operations</a></li>
+      <li><a href="#querying">Querying & Filters</a></li>
+      <li><a href="#include">Include & Navigation</a></li>
+      <li><a href="#joins">Joins</a></li>
+      <li><a href="#views">Stored Views</a></li>
+    </ul>
+
+    <h4>Advanced</h4>
+    <ul>
+      <li><a href="#transactions">Transactions</a></li>
+      <li><a href="#raw-sql">Raw SQL</a></li>
+      <li><a href="#seed-data">Seed Data</a></li>
+      <li><a href="#multi-db">Multiple Databases</a></li>
+      <li><a href="#soft-delete">Soft Delete</a></li>
+    </ul>
+  </aside>
+
+  <main>
+
+    <div class="hero">
+      <div class="eyebrow">Documentation</div>
+      <h1>A fast, code-first ORM for SQLite.</h1>
+      <p class="lead">BlackHole.Lite gives you Entity Framework-style productivity without a DbContext. Define your entities, call <code>SuperNova</code> once, and the database creates and migrates itself.</p>
+      <div class="badges">
+        <span class="badge purple">.NET 8</span>
+        <span class="badge">SQLite</span>
+        <span class="badge">No DbContext</span>
+        <span class="badge">Auto migrations</span>
+        <span class="badge">LINQ-friendly</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== OVERVIEW ===================== -->
+    <section class="doc" id="overview">
+      <h2>Overview</h2>
+      <p>BlackHole.Lite is a lightweight ORM that targets SQLite and is shipped on NuGet as <code>BlackHole.Core.Lite</code>. It is designed to keep the application code clean and the schema in sync with your entity classes — automatically.</p>
+      <ul>
+        <li><strong>No DbContext.</strong> Configure once at startup with <code>SuperNova</code> and you are done.</li>
+        <li><strong>Schema lives in code.</strong> Add a property, restart, the column appears.</li>
+        <li><strong>Familiar API.</strong> <code>HasOne</code>, <code>WithMany</code>, <code>HasForeignKey</code>, <code>Include</code>, <code>ThenInclude</code> — just like EF Core.</li>
+        <li><strong>Multi-database.</strong> Register many SQLite files and route entities to them by namespace.</li>
+        <li><strong>Raw SQL escape hatch.</strong> <code>BHConnection</code> when LINQ is not enough.</li>
+      </ul>
+    </section>
+
+    <!-- ===================== INSTALLATION ===================== -->
+    <section class="doc" id="installation">
+      <h2>Installation</h2>
+      <p>Add the NuGet package to your project:</p>
+      <div class="code-wrapper"><pre><code class="language-bash">dotnet add package BlackHole.Core.Lite</code></pre></div>
+      <p>Or via the Package Manager Console:</p>
+      <div class="code-wrapper"><pre><code class="language-powershell">Install-Package BlackHole.Core.Lite</code></pre></div>
+      <div class="callout note">
+        <strong>Requirements</strong>
+        .NET 8 or higher. SQLite is bundled via <code>SQLitePCLRaw.bundle_e_sqlite3</code> — no system install required.
+      </div>
+    </section>
+
+    <!-- ===================== GETTING STARTED ===================== -->
+    <section class="doc" id="getting-started">
+      <h2>Getting Started</h2>
+      <p>Three steps: define an entity, bootstrap the ORM, query it.</p>
+
+      <h3>1. Define an entity</h3>
+      <div class="code-wrapper"><pre><code class="language-csharp">using BlackHole.Entities;
+
+public class User : BHEntity
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public int Age { get; set; }
+}</code></pre></div>
+      <p>Inheriting from <code>BHEntity</code> gives you an auto-generated <code>Id</code> primary key.</p>
+
+      <h3>2. Bootstrap at startup</h3>
+      <div class="code-wrapper"><pre><code class="language-csharp">using BlackHole.Configuration;
+
+BlackHoleConfiguration.SuperNova(settings =>
+{
+    settings.AddDatabase("MyAppDb");
+});</code></pre></div>
+      <p>That single call scans the assembly for entities, creates the SQLite file, and builds tables. If you add a column later, the next run alters the table for you.</p>
+
+      <h3>3. Use it</h3>
+      <div class="code-wrapper"><pre><code class="language-csharp">using BlackHole.Core;
+
+var users = BHDataProvider.For&lt;User&gt;();
+
+users.InsertEntry(new User { Name = "Mike", Email = "mike@example.com", Age = 32 });
+
+var mike = users.GetEntryAsyncWhere(u => u.Email == "mike@example.com");
+var allAdults = users.GetAllEntriesWhere(u => u.Age &gt;= 18);</code></pre></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ===================== DEFINING ENTITIES ===================== -->
+    <section class="doc" id="defining-entities">
+      <h2>Defining Entities</h2>
+      <p>Every entity inherits from <code>BHEntity</code>. The base class provides:</p>
+      <ul>
+        <li><code>int Id</code> — auto-increment primary key.</li>
+        <li><code>int Inactive</code> — internal soft-delete flag (only used if the entity is decorated with <code>[UseActivator]</code>).</li>
+      </ul>
+      <p>Property types map to SQLite types automatically. Supported types include all CLR primitives, <code>DateTime</code>, <code>DateTimeOffset</code>, <code>Guid</code>, <code>byte</code>, <code>uint</code>, <code>ushort</code>, and nullable variants.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">public class Order : BHEntity
+{
+    public int CustomerId { get; set; }
+    public DateTime PlacedAt { get; set; }
+    public decimal Total { get; set; }
+    public string? Notes { get; set; }    // nullable -&gt; nullable column
+}</code></pre></div>
+    </section>
+
+    <!-- ===================== ATTRIBUTES ===================== -->
+    <section class="doc" id="attributes">
+      <h2>Attributes</h2>
+      <p>Use these attributes on entity properties to fine-tune the generated schema:</p>
+      <table>
+        <thead><tr><th>Attribute</th><th>Applies to</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><code>[ForeignKey(typeof(T))]</code></td><td>Property</td><td>Marks the property as a foreign key referencing entity <code>T</code>.</td></tr>
+          <tr><td><code>[Unique]</code></td><td>Property</td><td>Adds a UNIQUE constraint on the column.</td></tr>
+          <tr><td><code>[NotNullable]</code></td><td>Reference property</td><td>Forces NOT NULL on a reference type column.</td></tr>
+          <tr><td><code>[VarCharSize(n)]</code></td><td>String property</td><td>Caps the string column length to <code>n</code> characters.</td></tr>
+          <tr><td><code>[UseActivator]</code></td><td>Class</td><td>Enables soft-delete. <code>Delete*</code> methods set <code>Inactive=1</code> instead of removing the row.</td></tr>
+        </tbody>
+      </table>
+      <div class="code-wrapper"><pre><code class="language-csharp">[UseActivator]
+public class Customer : BHEntity
+{
+    [Unique]
+    [VarCharSize(120)]
+    public string Email { get; set; } = string.Empty;
+
+    [NotNullable]
+    [VarCharSize(80)]
+    public string DisplayName { get; set; } = string.Empty;
+}</code></pre></div>
+    </section>
+
+    <!-- ===================== RELATIONSHIPS ===================== -->
+    <section class="doc" id="relationships">
+      <h2>Relationships</h2>
+      <p>For richer schemas — foreign keys, delete behaviors, navigation properties — derive from the generic <code>BHEntity&lt;T&gt;</code> and override <code>Configure</code>. The fluent API mirrors EF Core.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">public class Order : BHEntity&lt;Order&gt;
+{
+    public int CustomerId { get; set; }
+    public DateTime PlacedAt { get; set; }
+    public decimal Total { get; set; }
+
+    public BHIncludeItem&lt;Customer&gt;? Customer { get; set; }
+
+    public override void Configure(RelationBuilder&lt;Order&gt; modelBuilder)
+    {
+        modelBuilder.HasOne(o =&gt; o.Customer)
+                    .WithMany(c =&gt; c.Orders)
+                    .HasForeignKey(o =&gt; o.CustomerId)
+                    .OnDelete(OnDeleteBehavior.Cascade);
+    }
+}
+
+public class Customer : BHEntity&lt;Customer&gt;
+{
+    public string Name { get; set; } = string.Empty;
+    public BHIncludeList&lt;Order&gt;? Orders { get; set; }
+
+    public override void Configure(RelationBuilder&lt;Customer&gt; modelBuilder) { }
+}</code></pre></div>
+
+      <h3>Delete behaviors</h3>
+      <table>
+        <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>OnDeleteBehavior.Restrict</code></td><td>Block the delete if any child rows reference it.</td></tr>
+          <tr><td><code>OnDeleteBehavior.Cascade</code></td><td>Delete child rows along with the parent.</td></tr>
+          <tr><td><code>OnDeleteBehavior.SetNull</code></td><td>Null out the foreign key on children. Requires the FK column to be nullable.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <strong>Heads-up</strong>
+        The override is spelled <code>Configure</code> in the current API. This is a known typo and is preserved for back-compat in 0.9.x.
+      </div>
+    </section>
+
+    <!-- ===================== INDEXES ===================== -->
+    <section class="doc" id="indexes">
+      <h2>Indexes</h2>
+      <p>Declare indexes inside <code>Configure</code>. Single-column or composite, optionally unique.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">public override void Configure(RelationBuilder&lt;Customer&gt; modelBuilder)
+{
+    // Single column unique index
+    modelBuilder.HasIndex(c =&gt; c.Email).IsUnique();
+
+    // Composite index
+    modelBuilder.HasIndex(c =&gt; new { c.LastName, c.FirstName });
+}</code></pre></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ===================== CRUD ===================== -->
+    <section class="doc" id="crud">
+      <h2>CRUD Operations</h2>
+      <p>All data access starts from a typed entity context returned by <code>BHDataProvider.For&lt;T&gt;()</code>.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">var users = BHDataProvider.For&lt;User&gt;();
+
+// Create
+int id = users.InsertEntry(new User { Name = "Mike", Age = 32 });
+users.InsertEntries(new[] {
+    new User { Name = "Anna", Age = 28 },
+    new User { Name = "Lila", Age = 41 }
+});
+
+// Read
+var single = users.GetEntryById(id);
+var all    = users.GetAllEntries();
+
+// Update
+var u = users.GetEntryById(id);
+if (u != null) { u.Age = 33; users.UpdateEntryById(u); }
+
+// Delete
+users.DeleteEntryById(id);
+users.DeleteAllEntries();</code></pre></div>
+    </section>
+
+    <!-- ===================== QUERYING ===================== -->
+    <section class="doc" id="querying">
+      <h2>Querying & Filters</h2>
+      <p>Pass LINQ predicates to the <code>*Where</code> overloads. Filters compose naturally and translate to parameterized SQL.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">var users = BHDataProvider.For&lt;User&gt;();
+
+var adults    = users.GetAllEntriesWhere(u =&gt; u.Age &gt;= 18);
+var firstAnna = users.GetEntryWhere(u =&gt; u.Name == "Anna");
+var hasAdmin  = users.AnyEntry(u =&gt; u.IsAdmin);
+var howMany   = users.CountEntries(u =&gt; u.Age &gt; 30);
+
+// String matching
+var ms = users.GetAllEntriesWhere(u =&gt; u.Name.StartsWith("M"));
+
+// Composition
+var activeAdults = users.GetAllEntriesWhere(u =&gt; u.IsActive &amp;&amp; u.Age &gt;= 18);</code></pre></div>
+    </section>
+
+    <!-- ===================== INCLUDE ===================== -->
+    <section class="doc" id="include">
+      <h2>Include & Navigation</h2>
+      <p>Pull related entities in a single query with <code>Include</code>, then go deeper with <code>ThenInclude</code>.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">var orders = BHDataProvider.For&lt;Order&gt;()
+    .Include(o =&gt; o.Customer)
+    .GetAllEntries();
+
+foreach (var o in orders)
+{
+    Console.WriteLine($"{o.Id} - {o.Customer?.Value?.Name}");
+}
+
+// Nested
+var customers = BHDataProvider.For&lt;Customer&gt;()
+    .Include(c =&gt; c.Orders)
+    .ThenInclude(o =&gt; o.Items)
+    .GetAllEntries();</code></pre></div>
+      <div class="callout note">
+        <strong>Lazy vs Eager</strong>
+        BlackHole.Lite is eager-only by design — no surprise N+1 queries. If a navigation is not in <code>Include</code>, it stays null.
+      </div>
+    </section>
+
+    <!-- ===================== JOINS ===================== -->
+    <section class="doc" id="joins">
+      <h2>Joins</h2>
+      <p>For ad-hoc joins that project into a custom shape, use the join builders on <code>BHDataProvider</code>. Project results into a <code>BlackHoleDto</code>.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">public class OrderRow : BlackHoleDto
+{
+    public int OrderId { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+    public decimal Total { get; set; }
+}
+
+var rows = BHDataProvider
+    .InnerJoin&lt;Order, Customer&gt;()
+    .On(o =&gt; o.CustomerId, c =&gt; c.Id)
+    .Where((o, c) =&gt; o.Total &gt; 100)
+    .Cast&lt;OrderRow&gt;()
+    .SelectAll();</code></pre></div>
+      <p>Available join types: <code>InnerJoin</code>, <code>LeftJoin</code>, <code>RightJoin</code>, <code>OuterJoin</code>.</p>
+    </section>
+
+    <!-- ===================== VIEWS ===================== -->
+    <section class="doc" id="views">
+      <h2>Stored Views</h2>
+      <p>If you run the same join again and again, register it once at startup and call it by DTO type.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">public class OrderViewSetup : IBHInitialViews
+{
+    public void DefineViews(BHViewInitializer initializer)
+    {
+        initializer.CreateView&lt;OrderRow&gt;(
+            BHDataProvider.InnerJoin&lt;Order, Customer&gt;()
+                .On(o =&gt; o.CustomerId, c =&gt; c.Id)
+        );
+    }
+}
+
+// Anywhere later
+List&lt;OrderRow&gt; rows = BHDataProvider.ExecuteView&lt;OrderRow&gt;();</code></pre></div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ===================== TRANSACTIONS ===================== -->
+    <section class="doc" id="transactions">
+      <h2>Transactions</h2>
+      <p>Wrap multiple operations in a <code>BHTransaction</code>. It auto-rolls back if you forget to commit.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">using var tx = new BHTransaction();
+
+var customers = BHDataProvider.For&lt;Customer&gt;();
+var orders    = BHDataProvider.For&lt;Order&gt;();
+
+int customerId = customers.InsertEntry(new Customer { Name = "Mike" }, tx);
+orders.InsertEntry(new Order { CustomerId = customerId, Total = 99.99m }, tx);
+
+tx.Commit();</code></pre></div>
+      <div class="callout">
+        <strong>Tip</strong>
+        Every CRUD method has a transactional overload that takes a <code>BHTransaction</code> as the last argument.
+      </div>
+    </section>
+
+    <!-- ===================== RAW SQL ===================== -->
+    <section class="doc" id="raw-sql">
+      <h2>Raw SQL</h2>
+      <p>For anything LINQ cannot express, drop down to <code>BHConnection</code>. Parameters keep you safe from injection.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">var conn = BHDataProvider.GetConnection();
+
+var args = new BHParameters();
+args.Add("minAge", 18);
+
+var adults = conn.Query&lt;User&gt;(
+    "SELECT * FROM \"User\" WHERE Age &gt;= @minAge",
+    args);
+
+// Single value
+int total = conn.QueryFirst&lt;int&gt;("SELECT COUNT(*) FROM \"Order\"", null);
+
+// Non-query
+conn.JustExecute("UPDATE \"User\" SET IsActive = 1 WHERE Inactive = 0", null);</code></pre></div>
+    </section>
+
+    <!-- ===================== SEED DATA ===================== -->
+    <section class="doc" id="seed-data">
+      <h2>Seed Data</h2>
+      <p>Implement <code>IBHInitialData</code> to insert default rows the first time the database is created.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">public class DefaultRoles : IBHInitialData
+{
+    public void SeedData(BHDataInitializer initializer)
+    {
+        initializer.AddData(new Role { Name = "Admin" });
+        initializer.AddData(new Role { Name = "User" });
+    }
+}</code></pre></div>
+      <p>The seeder runs automatically once, on first DB creation. Subsequent runs do nothing.</p>
+    </section>
+
+    <!-- ===================== MULTI-DB ===================== -->
+    <section class="doc" id="multi-db">
+      <h2>Multiple Databases</h2>
+      <p>Register more than one database and route entities to them by namespace.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">BlackHoleConfiguration.SuperNova(settings =&gt;
+{
+    settings.AddDatabase("UsersDb",    "MyApp.Domain.Users");
+    settings.AddDatabase("ProductsDb", "MyApp.Domain.Products");
+});
+
+// Address a specific DB at query time
+var users = BHDataProvider.For&lt;User&gt;("UsersDb");
+var skus  = BHDataProvider.For&lt;Sku&gt;("ProductsDb");</code></pre></div>
+    </section>
+
+    <!-- ===================== SOFT DELETE ===================== -->
+    <section class="doc" id="soft-delete">
+      <h2>Soft Delete</h2>
+      <p>Decorate any entity class with <code>[UseActivator]</code> and <code>Delete*</code> calls flip <code>Inactive = 1</code> instead of removing the row. <code>GetAll*</code> calls automatically hide inactive rows.</p>
+      <div class="code-wrapper"><pre><code class="language-csharp">[UseActivator]
+public class Account : BHEntity
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+var accounts = BHDataProvider.For&lt;Account&gt;();
+accounts.DeleteEntryById(42);   // sets Inactive = 1, row stays
+var live = accounts.GetAllEntries(); // id=42 not returned</code></pre></div>
+      <div class="callout">
+        <strong>Permanent delete</strong>
+        Drop down to <code>BHConnection.JustExecute</code> with a raw <code>DELETE</code> if you really need to remove the row.
+      </div>
+    </section>
+
+  </main>
+
+  <aside class="toc" id="toc">
+    <h5>On this page</h5>
+    <ul id="toc-list"></ul>
+  </aside>
+</div>
+
+<footer>
+  <span>BlackHole.Lite © Mikarsoft Ltd</span>
+  <span>v8.0.0 · MIT License</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-powershell.min.js"></script>
+
+<script>
+  // === Copy buttons on all code blocks ===
+  document.querySelectorAll('.code-wrapper').forEach(wrap => {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', () => {
+      const code = wrap.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+      });
+    });
+    wrap.appendChild(btn);
+  });
+
+  // === Build right-side TOC from current section's h3s, refresh on scroll ===
+  const sidebarLinks = document.querySelectorAll('.sidebar a[href^="#"]');
+  const sections = document.querySelectorAll('section.doc');
+  const tocList = document.getElementById('toc-list');
+
+  function buildTocFor(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) { tocList.innerHTML = ''; return; }
+    const h3s = section.querySelectorAll('h3');
+    if (h3s.length === 0) { tocList.innerHTML = ''; return; }
+    tocList.innerHTML = '';
+    h3s.forEach((h, i) => {
+      const id = h.id || (sectionId + '-h-' + i);
+      h.id = id;
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="#${id}">${h.textContent}</a>`;
+      tocList.appendChild(li);
+    });
+  }
+
+  // === Active section tracking via IntersectionObserver ===
+  let currentSection = null;
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        sidebarLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+        if (id !== currentSection) {
+          currentSection = id;
+          buildTocFor(id);
+        }
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>

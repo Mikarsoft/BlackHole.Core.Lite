@@ -38,7 +38,7 @@ namespace BlackHole.Internal
                 var builder = Activator.CreateInstance(builderType);
 
                 var instance = Activator.CreateInstance(TableType);
-                var configureMethod = TableType.GetMethod("Congifure");
+                var configureMethod = TableType.GetMethod("Configure");
                 configureMethod!.Invoke(instance, new[] { builder });
 
                 var flags = BindingFlags.NonPublic | BindingFlags.Instance;
