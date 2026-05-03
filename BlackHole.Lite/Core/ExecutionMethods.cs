@@ -14,13 +14,25 @@ namespace BlackHole.Core
         internal static SqliteDataProvider _dataProvider = BHDataProviderSelector.GetDataProvider();
 
         /// <summary>
-        /// 
+        /// Eagerly loads a single related entity, returning an updated context for further chaining with ThenInclude.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="include"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The root entity type, deriving from <see cref="BHEntity"/>.</typeparam>
+        /// <typeparam name="G">The related entity type to include, deriving from <see cref="BHEntity"/>.</typeparam>
+        /// <param name="context">The entity context for <typeparamref name="T"/>.</param>
+        /// <param name="include">A lambda expression selecting a single related entity property of type <see cref="BHIncludeItem{G}"/>.</param>
+        /// <remarks>
+        /// Include eagerly loads the related entity in a single query with joins, rather than lazy-loading.
+        /// The returned context allows chaining with ThenInclude to load nested relationships.
+        /// </remarks>
+        /// <returns>An updated context with the inclusion registered for execution.</returns>
+        /// <example>
+        /// <code>
+        /// var userWithProfile = BHDataProvider.For&lt;User&gt;()
+        ///     .Include(u => u.Profile)
+        ///     .GetEntryById(5);
+        /// // userWithProfile.Profile is populated in a single query
+        /// </code>
+        /// </example>
         public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
             Expression<Func<T, BHIncludeItem<G>>> include)
             where T : BHEntity where G : BHEntity
@@ -57,13 +69,17 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Eagerly loads a collection of related entities, returning an updated context for further chaining.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="include"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The root entity type, deriving from <see cref="BHEntity"/>.</typeparam>
+        /// <typeparam name="G">The related entity type to include, deriving from <see cref="BHEntity"/>.</typeparam>
+        /// <param name="context">The entity context for <typeparamref name="T"/>.</param>
+        /// <param name="include">A lambda expression selecting a collection property of type <see cref="BHIncludeList{G}"/>.</param>
+        /// <remarks>
+        /// Include eagerly loads a collection of related entities in a single query with joins.
+        /// Useful for loading one-to-many relationships.
+        /// </remarks>
+        /// <returns>An updated context with the collection inclusion registered for execution.</returns>
         public static BHEntityContext<T, G> Include<T, G>(this BHEntityContext<T> context,
             Expression<Func<T, BHIncludeList<G>>> include)
             where T : BHEntity where G : BHEntity
@@ -86,14 +102,14 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Eagerly loads an additional single related entity to the context from the root entity, enabling deeper chaining.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="H"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="include"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The root entity type.</typeparam>
+        /// <typeparam name="H">The previously included entity type.</typeparam>
+        /// <typeparam name="G">The new related entity type to include.</typeparam>
+        /// <param name="context">The entity context with a prior include.</param>
+        /// <param name="include">A lambda expression selecting a single related entity property on the root type.</param>
+        /// <returns>An updated context with the additional inclusion registered.</returns>
         public static BHEntityContext<T, G> Include<T, H, G>(this BHEntityContext<T, H> context,
           Expression<Func<T, BHIncludeItem<G>>> include)
           where T : BHEntity where G : BHEntity where H : BHEntity
@@ -130,14 +146,14 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Eagerly loads an additional collection of related entities to the context from the root entity.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="H"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="include"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The root entity type.</typeparam>
+        /// <typeparam name="H">The previously included entity type.</typeparam>
+        /// <typeparam name="G">The new related entity type collection to include.</typeparam>
+        /// <param name="context">The entity context with a prior include.</param>
+        /// <param name="include">A lambda expression selecting a collection property on the root type.</param>
+        /// <returns>An updated context with the additional collection inclusion registered.</returns>
         public static BHEntityContext<T, G> Include<T, H, G>(this BHEntityContext<T, H> context,
             Expression<Func<T, BHIncludeList<G>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
@@ -160,14 +176,18 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Eagerly loads a collection of entities related to a previously included single entity.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <typeparam name="H"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="include"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The root entity type.</typeparam>
+        /// <typeparam name="G">The previously included entity type.</typeparam>
+        /// <typeparam name="H">The related entity type collection to then-include.</typeparam>
+        /// <param name="context">The entity context with a prior include.</param>
+        /// <param name="include">A lambda expression selecting a collection property on the included type.</param>
+        /// <remarks>
+        /// Use ThenInclude to load relationships of an already-included entity. This enables
+        /// deep eager-loading: User -> Profile -> ProfileSettings.
+        /// </remarks>
+        /// <returns>An updated context with the nested inclusion registered.</returns>
         public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
             Expression<Func<G, BHIncludeList<H>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
@@ -191,14 +211,14 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Eagerly loads a single entity related to a previously included entity.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <typeparam name="H"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="include"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The root entity type.</typeparam>
+        /// <typeparam name="G">The previously included entity type.</typeparam>
+        /// <typeparam name="H">The related single entity type to then-include.</typeparam>
+        /// <param name="context">The entity context with a prior include.</param>
+        /// <param name="include">A lambda expression selecting a single related entity property on the included type.</param>
+        /// <returns>An updated context with the nested single-entity inclusion registered.</returns>
         public static BHEntityContext<T, H> ThenInclude<T, G, H>(this BHEntityContext<T, G> context,
             Expression<Func<G, BHIncludeItem<H>>> include)
             where T : BHEntity where G : BHEntity where H : BHEntity
@@ -236,14 +256,18 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves an entity by its ID, including eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="Id"></param>
-        /// <returns></returns>
-        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id) 
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="Id">The ID of the entity to retrieve.</param>
+        /// <remarks>
+        /// Returns null if no entity with the given ID is found, or if the entity is inactive
+        /// (when [UseActivator] is applied). Related data is eagerly loaded per the context's includes.
+        /// </remarks>
+        /// <returns>The entity with the specified ID and its eagerly loaded relationships, or null.</returns>
+        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id)
             where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
@@ -261,15 +285,15 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves an entity by its ID within a transaction, including eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="Id"></param>
-        /// <param name="bhTransaction"></param>
-        /// <returns></returns>
-        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id, BHTransaction bhTransaction) 
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="Id">The ID of the entity to retrieve.</param>
+        /// <param name="bhTransaction">The transaction to execute within.</param>
+        /// <returns>The entity with the specified ID and its eagerly loaded relationships, or null.</returns>
+        public static T? GetEntryById<T, G>(this BHEntityContext<T, G> context, int Id, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
@@ -287,12 +311,15 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves all active entities of the type, with eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <remarks>
+        /// When [UseActivator] is applied, only active (Inactive=0) entities are returned.
+        /// </remarks>
+        /// <returns>A list of all active entities with their eagerly loaded relationships.</returns>
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context) where T : BHEntity where G : BHEntity
         {
             var inc = context.Includes.BuildIncludeSql<T>(context.Columns);
@@ -307,13 +334,13 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves all active entities within a transaction, with eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="bhTransaction"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="bhTransaction">The transaction to execute within.</param>
+        /// <returns>A list of all active entities with their eagerly loaded relationships.</returns>
         public static List<T> GetAllEntries<T, G>(this BHEntityContext<T, G> context, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
         {
@@ -329,13 +356,16 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves the first entity matching a filter, with eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <remarks>
+        /// Returns null if no entity matches the predicate, or only inactive entities are found (with [UseActivator]).
+        /// </remarks>
+        /// <returns>The first entity matching the predicate, or null.</returns>
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
             where T : BHEntity  where G : BHEntity
@@ -357,14 +387,14 @@ namespace BlackHole.Core
 
 
         /// <summary>
-        /// 
+        /// Retrieves the first entity matching a filter within a transaction, with eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <param name="bhTransaction"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <param name="bhTransaction">The transaction to execute within.</param>
+        /// <returns>The first entity matching the predicate, or null.</returns>
         public static T? GetEntryWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
@@ -384,13 +414,13 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves all entities matching a filter, with eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <returns>A list of all entities matching the predicate.</returns>
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate)
             where T : BHEntity where G : BHEntity
@@ -410,14 +440,14 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Retrieves all entities matching a filter within a transaction, with eagerly loaded related entities.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="G"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <param name="bhTransaction"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to retrieve.</typeparam>
+        /// <typeparam name="G">A previously included related type.</typeparam>
+        /// <param name="context">The entity context with includes registered.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <param name="bhTransaction">The transaction to execute within.</param>
+        /// <returns>A list of all entities matching the predicate.</returns>
         public static List<T> GetEntriesWhere<T, G>(this BHEntityContext<T, G> context,
             Expression<Func<T, bool>> predicate, BHTransaction bhTransaction)
             where T : BHEntity where G : BHEntity
@@ -436,11 +466,14 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Determines whether any active entities exist in the table.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to check.</typeparam>
+        /// <param name="context">The entity context.</param>
+        /// <remarks>
+        /// When [UseActivator] is applied, only active entities are counted.
+        /// </remarks>
+        /// <returns>True if at least one active entity exists; false otherwise.</returns>
         public static bool Any<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             string limit = 1.GetLimiter();
@@ -452,12 +485,12 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Determines whether any active entities match the specified filter.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to check.</typeparam>
+        /// <param name="context">The entity context.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <returns>True if at least one active entity matches the predicate; false otherwise.</returns>
         public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T,bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
@@ -470,12 +503,12 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Determines whether any active entities exist in the table within a transaction.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="bHTransaction"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to check.</typeparam>
+        /// <param name="context">The entity context.</param>
+        /// <param name="bHTransaction">The transaction to execute within.</param>
+        /// <returns>True if at least one active entity exists; false otherwise.</returns>
         public static bool Any<T>(this BHEntityContext<T> context, BHTransaction bHTransaction) where T : BHEntity
         {
             string limit = 1.GetLimiter();
@@ -487,13 +520,13 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Determines whether any active entities match the filter within a transaction.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <param name="bHTransaction"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to check.</typeparam>
+        /// <param name="context">The entity context.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <param name="bHTransaction">The transaction to execute within.</param>
+        /// <returns>True if at least one active entity matches the predicate; false otherwise.</returns>
         public static bool Any<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate, BHTransaction bHTransaction) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);
@@ -506,11 +539,14 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Returns the count of all active entities in the table.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to count.</typeparam>
+        /// <param name="context">The entity context.</param>
+        /// <remarks>
+        /// When [UseActivator] is applied, only active entities are counted.
+        /// </remarks>
+        /// <returns>The number of active entities.</returns>
         public static int Count<T>(this BHEntityContext<T> context) where T : BHEntity
         {
             if (context.WithActivator)
@@ -521,12 +557,12 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Returns the count of active entities matching the specified filter.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The entity type to count.</typeparam>
+        /// <param name="context">The entity context.</param>
+        /// <param name="predicate">A LINQ predicate to filter entities.</param>
+        /// <returns>The number of active entities matching the predicate.</returns>
         public static int Count<T>(this BHEntityContext<T> context, Expression<Func<T, bool>> predicate) where T : BHEntity
         {
             ColumnsAndParameters sql = predicate.SplitMembers<T>(string.Empty, null, 0);

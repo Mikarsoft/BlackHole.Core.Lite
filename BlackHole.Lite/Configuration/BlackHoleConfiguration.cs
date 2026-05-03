@@ -11,10 +11,43 @@ namespace BlackHole.Configuration
     public static class BlackHoleConfiguration
     {
         /// <summary>
-        /// Creates or Updates the Database Automatically into the specified Path
-        /// and also registers all the Entities of the Project to the BHDataProvider.
+        /// The main entry point for bootstrapping BlackHole.Lite. Scans the calling assembly for all <c>BHEntity</c> subclasses,
+        /// creates or updates SQLite databases to match their schemas, and registers them with the ORM.
+        /// This method must be called exactly once at application startup before any database operations.
         /// </summary>
-        /// <param name="settings">The Path of the Database</param>
+        /// <param name="settings">A configuration action that receives a <see cref="BlackHoleLiteSettings"/> instance.
+        /// Use this to register one or more databases via <see cref="BlackHoleLiteSettings.AddDatabase(string)"/> calls,
+        /// optionally customizing the data folder path.</param>
+        /// <remarks>
+        /// SuperNova performs the following operations:
+        /// - Scans the calling assembly for classes that inherit from BHEntity.
+        /// - Creates SQLite database files in the configured data folder (default: <c>&lt;AppBase&gt;/BlackHoleData</c>).
+        /// - Creates or updates tables to match entity properties and relationships.
+        /// - Runs any initial data insertion logic (IInitialData implementations).
+        /// - Stores any defined database views (IInitialViews implementations).
+        ///
+        /// If a namespace filter is set on a database, only entities in that namespace are included for that database.
+        /// Duplicate database names will throw an exception.
+        /// </remarks>
+        /// <exception cref="Exception">Thrown if duplicate database names are detected or if the data path is inaccessible.</exception>
+        /// <example>
+        /// <code>
+        /// // Typical startup configuration
+        /// BlackHoleConfiguration.SuperNova(settings =>
+        /// {
+        ///     settings.AddDatabase("MyApplicationDb")
+        ///             .SetDataPath(@"C:\MyApp\Data");
+        /// });
+        ///
+        /// // Multi-database configuration
+        /// BlackHoleConfiguration.SuperNova(settings =>
+        /// {
+        ///     settings.AddDatabase("UsersDb", "MyApp.Domain.Users");
+        ///     settings.AddDatabase("ProductsDb", "MyApp.Domain.Products")
+        ///             .SetDataPath(@"D:\DatabaseFiles");
+        /// });
+        /// </code>
+        /// </example>
         public static void SuperNova(Action<BlackHoleLiteSettings> settings)
         {
             BlackHoleLiteSettings InsideSettings = new();
@@ -94,9 +127,14 @@ namespace BlackHole.Configuration
         }
 
         /// <summary>
-        /// Checks the database's condition
+        /// Tests connectivity to the default database by attempting to verify its existence.
+        /// This is useful for health checks or diagnostics after SuperNova initialization.
         /// </summary>
-        /// <returns>Database is Up</returns>
+        /// <returns>True if the default database exists and is accessible; false otherwise.</returns>
+        /// <remarks>
+        /// This method tests only the default (first registered) database. If you have registered multiple databases,
+        /// use the overload <see cref="TestDatabase(string)"/> to test a specific database by name.
+        /// </remarks>
         public static bool TestDatabase()
         {
             BHDatabaseBuilder databaseBuilder = new();
@@ -104,9 +142,15 @@ namespace BlackHole.Configuration
         }
 
         /// <summary>
-        /// Closes all connections and drops the database.
+        /// Closes all connections and permanently deletes the default database file.
+        /// This operation is irreversible and will lose all data.
         /// </summary>
-        /// <returns>Success</returns>
+        /// <returns>True if the database was successfully dropped; false if the operation failed or the database did not exist.</returns>
+        /// <remarks>
+        /// This method only affects the default (first registered) database. To drop a specific named database,
+        /// use the overload <see cref="DropDatabase(string)"/>.
+        /// All active connections must be closed before the file can be deleted; this method handles that automatically.
+        /// </remarks>
         public static bool DropDatabase()
         {
             BHDatabaseBuilder databaseBuilder = new();
@@ -114,21 +158,29 @@ namespace BlackHole.Configuration
         }
 
         /// <summary>
-        /// Checks the database's condition
+        /// Tests connectivity to a specific named database by attempting to verify its existence.
+        /// This is useful for health checks or diagnostics on individual databases in a multi-database setup.
         /// </summary>
-        /// <returns>Database is Up</returns>
+        /// <param name="databaseName">The name of the database to test (as registered via SuperNova).
+        /// Must match exactly the database name passed to <see cref="BlackHoleLiteSettings.AddDatabase(string)"/>.</param>
+        /// <returns>True if the database exists and is accessible; false otherwise.</returns>
         public static bool TestDatabase(string databaseName)
         {
             BHDatabaseBuilder databaseBuilder = new();
             return databaseBuilder.DoesDbExists(databaseName);
         }
 
-
         /// <summary>
-        /// 
+        /// Closes all connections and permanently deletes a specific named database file.
+        /// This operation is irreversible and will lose all data in that database.
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <returns></returns>
+        /// <param name="databaseName">The name of the database to drop (as registered via SuperNova).
+        /// Must match exactly the database name passed to <see cref="BlackHoleLiteSettings.AddDatabase(string)"/>.</param>
+        /// <returns>True if the database was successfully dropped; false if the operation failed or the database did not exist.</returns>
+        /// <remarks>
+        /// All active connections to the specified database must be closed before the file can be deleted;
+        /// this method handles that automatically. Other databases in a multi-database setup remain unaffected.
+        /// </remarks>
         public static bool DropDatabase(string databaseName)
         {
             BHDatabaseBuilder databaseBuilder = new();

@@ -4,10 +4,15 @@ using BlackHole.Entities;
 namespace BlackHole.Core
 {
     /// <summary>
-    /// Contains the required settings of the Entity so the
-    /// Data Provider's Extension methods can use it.
+    /// Provides a fluent context for executing transactional queries, inserts, updates, and deletes on a single entity type.
+    /// Returned by <see cref="BHTransaction.For{T}()"/>, all operations enlist in the parent transaction.
     /// </summary>
-    /// <typeparam name="T">BlackHoleEntity</typeparam>
+    /// <typeparam name="T">An entity class deriving from <see cref="BHEntity"/>.</typeparam>
+    /// <remarks>
+    /// This context is the transactional sibling of <see cref="BHEntityContext{T}"/>. All CRUD operations
+    /// execute within the scope of a <see cref="BHTransaction"/>, meaning they can be atomically committed
+    /// or rolled back together. The transaction will auto-rollback on <c>Dispose()</c> if not explicitly committed.
+    /// </remarks>
     public class BHTransactEntityContext<T> where T : BHEntity
     {
         internal bool WithActivator { get; }
@@ -36,10 +41,12 @@ namespace BlackHole.Core
 
 
     /// <summary>
-    /// 
+    /// Represents a transactional entity context with a single level of eager-loaded navigation property.
+    /// Returned by <see cref="ExecutionTransactMethods.Include{T,G}"/>, this allows chaining additional
+    /// <c>ThenInclude()</c> or executing transactional queries with the included relationship materialized.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <typeparam name="G"></typeparam>
+    /// <typeparam name="T">The root entity class, deriving from <see cref="BHEntity"/>.</typeparam>
+    /// <typeparam name="G">The related entity class to eagerly load, deriving from <see cref="BHEntity"/>.</typeparam>
     public class BHTransactEntityContext<T, G> where T : BHEntity where G : BHEntity
     {
         internal bool WithActivator { get; }

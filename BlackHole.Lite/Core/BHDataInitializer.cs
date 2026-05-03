@@ -42,10 +42,10 @@ namespace BlackHole.Core
         }
 
         /// <summary>
-        /// 
+        /// Returns a raw SQL connection for seed data execution.
         /// </summary>
-        /// <param name="databaseName"></param>
-        /// <returns></returns>
+        /// <param name="databaseName">Unused; connection uses the initializer's database.</param>
+        /// <returns>A <see cref="BHConnection"/> for executing custom SQL during initialization.</returns>
         public BHConnection Command(string databaseName)
         {
             return new BHConnection(ConnectionString);

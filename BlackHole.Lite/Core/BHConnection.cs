@@ -5,13 +5,24 @@ using System.Reflection;
 namespace BlackHole.Core
 {
     /// <summary>
-    /// An Interface that gives all
-    /// the required methods to perform custom sql commands
-    /// <para>It's already registered in the ServiceCollection and it can be used to 
-    /// your services with Dependency Injection</para>
-    /// <para>The connection is automatically generated and disposed after 
-    /// each execution</para>
+    /// Provides raw SQL query and command execution against a SQLite database. Used for
+    /// queries that cannot be expressed through the LINQ-like entity API.
     /// </summary>
+    /// <remarks>
+    /// Connections are automatically opened and closed for each method call; no manual
+    /// connection management is required. Supports parameterized queries via <see cref="BHParameters"/>
+    /// or object properties. Can be obtained from <see cref="BHDataProvider.GetConnection()"/>
+    /// or injected into services.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var conn = BHDataProvider.GetConnection();
+    /// var count = conn.ExecuteScalar&lt;int&gt;("select count(*) from Users");
+    /// var users = conn.Query&lt;User&gt;("select * from Users where Active = 1");
+    /// var user = conn.QueryFirst&lt;User&gt;("select * from Users where Id = @Id",
+    ///     new BHParameters() { { "Id", 5 } });
+    /// </code>
+    /// </example>
     public class BHConnection
     {
         private readonly SqliteExecutionProvider _executionProvider;
