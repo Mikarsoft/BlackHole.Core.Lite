@@ -6,6 +6,8 @@ A fast, code-first ORM for SQLite — Entity Framework-style productivity, witho
 [![Downloads](https://img.shields.io/nuget/dt/BlackHole.Core.Lite.svg)](https://www.nuget.org/packages/BlackHole.Core.Lite)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 
+📖 **[Read the full documentation →](https://mikarsoft.com/docs/blackhole-lite/)**
+
 Define your entities, call `SuperNova` once at startup, and BlackHole.Lite creates and migrates the SQLite database for you. No context classes, no migration files, no boilerplate.
 
 ---
@@ -269,7 +271,7 @@ The seeder runs automatically on first DB creation. Subsequent runs do nothing.
 ## Documentation
 
 Full documentation, with examples for every feature, is available at the project site:
-**[mikarsoft.com](https://mikarsoft.com)**
+**[mikarsoft.com](https://mikarsoft.com/docs/blackhole-lite/)**
 
 ---
 
