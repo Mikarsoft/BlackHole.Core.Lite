@@ -1,4 +1,4 @@
-﻿
+﻿using System.Reflection;
 
 namespace BlackHole.Lite.Configuration
 {
@@ -13,6 +13,9 @@ namespace BlackHole.Lite.Configuration
         internal string UsingNamespace {  get; set; }
 
         internal string ConnectionString { get; set; } = string.Empty;
+
+        // When set, entities are scanned from this assembly instead of the calling one.
+        internal Assembly? EntitiesAssembly { get; set; }
 
         internal DatabaseSettings()
         {
@@ -55,6 +58,19 @@ namespace BlackHole.Lite.Configuration
         {
             DatabaseName = databaseName;
             UsingNamespace = selectedNamespace;
+        }
+
+        /// <summary>
+        /// Sets the name of this database and scans the given assembly for its <c>BHEntity</c> subclasses,
+        /// instead of the calling assembly. Use this to map entities that live in a separate assembly
+        /// (for example a dynamically loaded plugin or addon) to their own database.
+        /// </summary>
+        /// <param name="databaseName">The name of the database file (without extension).</param>
+        /// <param name="assembly">The assembly whose BHEntity subclasses map to this database.</param>
+        public void AddDatabase(string databaseName, Assembly assembly)
+        {
+            DatabaseName = databaseName;
+            EntitiesAssembly = assembly;
         }
     }
 }

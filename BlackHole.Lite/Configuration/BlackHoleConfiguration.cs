@@ -1,5 +1,6 @@
 ﻿using BlackHole.Internal;
 using BlackHole.Lite.Configuration;
+using BlackHole.Statics;
 using System.Reflection;
 
 namespace BlackHole.Configuration
@@ -74,7 +75,20 @@ namespace BlackHole.Configuration
                 throw new Exception("Error. There are multiple databases with the same name. Please remove duplicate database names.");
             }
 
+            foreach (DatabaseSettings dbSetting in InsideSettings.DbSettings)
+            {
+                if (DatabaseStatics.RegisteredDatabases.ContainsKey(dbSetting.DatabaseName))
+                {
+                    throw new Exception($"Error. A database named '{dbSetting.DatabaseName}' is already registered. Database names must be unique across all SuperNova calls.");
+                }
+            }
+
             InsideSettings.DbSettings.CreateConnectionStrings();
+
+            foreach (DatabaseSettings dbSetting in InsideSettings.DbSettings)
+            {
+                DatabaseStatics.RegisteredDatabases[dbSetting.DatabaseName] = dbSetting.ConnectionString;
+            }
 
             Assembly GameAssembly = Assembly.GetCallingAssembly();
 
@@ -94,27 +108,29 @@ namespace BlackHole.Configuration
                 {
                     tableBuilder.SwitchConnectionString(dbSettings.ConnectionString);
 
+                    Assembly target = dbSettings.EntitiesAssembly ?? callingAssembly;
+
                     if (string.IsNullOrEmpty(dbSettings.UsingNamespace))
                     {
-                        tableBuilder.BuildMultipleTables(namespaceSelector.GetAllBHEntities(callingAssembly));
+                        tableBuilder.BuildMultipleTables(namespaceSelector.GetAllBHEntities(target));
 
                         if (databaseBuilder.IsCreatedFirstTime())
                         {
-                            dataBuilder.InsertDefaultData(namespaceSelector.GetInitialData(callingAssembly), dbSettings.DatabaseName);
+                            dataBuilder.InsertDefaultData(namespaceSelector.GetInitialData(target), dbSettings.DatabaseName);
                         }
 
-                        dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViews(callingAssembly), dbSettings.DatabaseName);
+                        dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViews(target), dbSettings.DatabaseName);
                     }
                     else
                     {
-                        tableBuilder.BuildMultipleTables(namespaceSelector.GetBHEntitiesInNamespace(callingAssembly, dbSettings.UsingNamespace));
+                        tableBuilder.BuildMultipleTables(namespaceSelector.GetBHEntitiesInNamespace(target, dbSettings.UsingNamespace));
 
                         if (databaseBuilder.IsCreatedFirstTime())
                         {
-                            dataBuilder.InsertDefaultData(namespaceSelector.GetInitialDataInNamespace(callingAssembly, dbSettings.UsingNamespace), dbSettings.DatabaseName);
+                            dataBuilder.InsertDefaultData(namespaceSelector.GetInitialDataInNamespace(target, dbSettings.UsingNamespace), dbSettings.DatabaseName);
                         }
 
-                        dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViewsInNamespace(callingAssembly, dbSettings.UsingNamespace), dbSettings.DatabaseName);
+                        dataBuilder.StoreDefaultViews(namespaceSelector.GetInitialViewsInNamespace(target, dbSettings.UsingNamespace), dbSettings.DatabaseName);
                     }
 
                     tableBuilder.CleanupConstraints();

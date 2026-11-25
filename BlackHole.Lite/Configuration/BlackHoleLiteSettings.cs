@@ -1,4 +1,5 @@
-﻿
+﻿using System.Reflection;
+
 namespace BlackHole.Lite.Configuration
 {
     /// <summary>
@@ -67,6 +68,20 @@ namespace BlackHole.Lite.Configuration
         public DataPathSettings AddDatabase(string databaseName, string useNamespace)
         {
             DbSettings.Add(new DatabaseSettings(databaseName, useNamespace));
+            return DataPath;
+        }
+
+        /// <summary>
+        /// Registers a single SQLite database and scans the given assembly for its <c>BHEntity</c> subclasses,
+        /// instead of the calling assembly. Use this to map entities that live in a separate assembly
+        /// (for example a dynamically loaded plugin or addon) to their own database.
+        /// </summary>
+        /// <param name="databaseName">The name of the database file (without extension).</param>
+        /// <param name="assembly">The assembly whose BHEntity subclasses map to this database.</param>
+        /// <returns>A <see cref="DataPathSettings"/> instance that allows chaining to customize the data folder path.</returns>
+        public DataPathSettings AddDatabase(string databaseName, Assembly assembly)
+        {
+            DbSettings.Add(new DatabaseSettings(databaseName, string.Empty) { EntitiesAssembly = assembly });
             return DataPath;
         }
 

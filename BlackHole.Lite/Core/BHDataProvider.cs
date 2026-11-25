@@ -105,7 +105,7 @@ namespace BlackHole.Core
         /// <returns>An entity context for executing queries on the specified database.</returns>
         public static BHEntityContext<T> For<T>(string databaseName) where T : BHEntity
         {
-            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(databaseName);
+            return EntitiesContext.First(x => x.EntityType == typeof(T)).MapEntity<T>(databaseName.BuildConnectionString());
         }
 
         /// <summary>

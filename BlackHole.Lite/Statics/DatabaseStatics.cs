@@ -11,5 +11,9 @@ namespace BlackHole.Statics
         internal static bool InitializeData { get; set; } = false;
         internal static string DbDateFormat { get; set; } = "yyyy-MM-dd";
         internal static bool IsLiteLibInitialized { get; set; }
+
+        // All database names registered across every SuperNova call (name -> connection string).
+        // Used to reject duplicate database names, even between separate SuperNova calls.
+        internal static Dictionary<string, string> RegisteredDatabases { get; } = new();
     }
 }
